@@ -1,0 +1,10 @@
+{
+  "12.4.0": "Latest stable release - RTX 40 series optimized",
+  "12.3.2": "Previous stable - Wide compatibility", 
+  "12.2.2": "LTS candidate - Enterprise ready",
+  "12.1.1": "Stable release - Good performance",
+  "12.0.1": "Major version baseline - Reliable",
+  "11.8.0": "Legacy support - Mature and stable",
+  "11.7.1": "Legacy stable - Proven compatibility",
+  "11.6.2": "Older legacy - Basic support"
+}

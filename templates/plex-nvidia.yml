@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  plex:
+    image: plexinc/pms-docker:latest
+    container_name: plex
+    restart: unless-stopped
+    network_mode: host
+    environment:
+      - TZ=UTC
+      - PLEX_CLAIM=claim-YOURCLAIMTOKEN
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
+    volumes:
+      - /path/to/plex/config:/config
+      - /path/to/media:/data
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu, compute, video, utility]
+
+  # Example: FFmpeg container with NVIDIA support
+  ffmpeg:
+    image: jrottenberg/ffmpeg:4.4-nvidia
+    container_name: ffmpeg-nvidia
+    restart: "no"
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,video,utility
+    volumes:
+      - /path/to/input:/input
+      - /path/to/output:/output
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu, compute, video, utility]
+    # Example command for GPU-accelerated encoding
+    command: >
+      -hwaccel cuda
+      -i /input/input_video.mp4
+      -c:v h264_nvenc
+      -preset fast
+      -b:v 5M
+      /output/output_video.mp4
