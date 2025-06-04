@@ -1,6 +1,7 @@
 """System checks and validation"""
 
 import sys
+import os
 from utils.logging import log_info, log_warn, log_error, log_step
 from utils.prompts import prompt_yes_no, prompt_acknowledge
 from utils.system import run_command, AptManager, cleanup_nvidia_repos, check_internet, get_os_info, check_nvidia_gpu
@@ -100,6 +101,58 @@ def _check_internet_connectivity():
             sys.exit(1)
     else:
         log_info("✓ Internet connectivity verified")
+
+
+def detect_existing_installations():
+    """Detect what's already installed on the system"""
+    installations = {
+        'nvidia_driver': {'installed': False, 'version': None},
+        'docker': {'installed': False, 'version': None},
+        'nvidia_runtime': {'installed': False, 'version': None}
+    }
+    
+    # Check NVIDIA driver
+    try:
+        nvidia_version = run_command("nvidia-smi --query-gpu=driver_version --format=csv,noheader", 
+                                   capture_output=True, check=False)
+        if nvidia_version and not "command not found" in nvidia_version.lower():
+            installations['nvidia_driver']['installed'] = True
+            installations['nvidia_driver']['version'] = nvidia_version.strip()
+    except:
+        pass
+    
+    # Check Docker
+    try:
+        docker_version = run_command("docker --version", capture_output=True, check=False)
+        if docker_version and "Docker version" in docker_version:
+            installations['docker']['installed'] = True
+            # Extract version number (e.g., "Docker version 24.0.6" -> "24.0.6")
+            version_part = docker_version.split("Docker version")[1].split(",")[0].strip()
+            installations['docker']['version'] = version_part
+    except:
+        pass
+    
+    # Check NVIDIA Container Runtime
+    try:
+        # Check if nvidia runtime is configured in docker
+        daemon_config = "/etc/docker/daemon.json"
+        if os.path.exists(daemon_config):
+            with open(daemon_config, 'r') as f:
+                content = f.read()
+                if 'nvidia' in content.lower():
+                    installations['nvidia_runtime']['installed'] = True
+                    installations['nvidia_runtime']['version'] = "Configured"
+        
+        # Alternative check - try to run nvidia container
+        result = run_command("docker run --rm --gpus all nvidia/cuda:11.0-base echo 'test'", 
+                           capture_output=True, check=False)
+        if result and "test" in result:
+            installations['nvidia_runtime']['installed'] = True
+            installations['nvidia_runtime']['version'] = "Working"
+    except:
+        pass
+    
+    return installations
 
 
 def check_gpu_capabilities():

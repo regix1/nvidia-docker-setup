@@ -8,34 +8,56 @@ from utils.prompts import prompt_choice, prompt_input
 
 def select_cuda_version():
     """Select CUDA version for installation"""
-    log_step("Selecting CUDA version...")
+    log_step("CUDA Version Selection")
     
     cuda_versions = _load_cuda_versions()
     
-    # Display available versions
-    log_info("Available CUDA versions:")
-    choices = []
-    for i, (version, description) in enumerate(cuda_versions.items()):
-        is_default = i == 0
-        default_text = " (default)" if is_default else ""
-        print(f"  {i+1}. {version}{default_text} - {description}")
-        choices.append(version)
+    log_info("This selection determines which CUDA version will be used in Docker containers.")
+    log_info("It does not install CUDA on the host - that's handled by the NVIDIA driver.\n")
     
-    choices.append("Other (enter manually)")
+    # Prepare choices for the menu
+    choices = []
+    for version, description in cuda_versions.items():
+        choices.append(f"{version} - {description}")
+    
+    choices.append("Enter custom version")
+    
+    # Display the menu
+    print("Available CUDA versions for containers:")
+    for i, choice in enumerate(choices, 1):
+        default_marker = " (recommended)" if i == 1 else ""
+        print(f"  {i}. {choice}{default_marker}")
+    
+    print()
     
     # Get user selection
     choice_idx = prompt_choice(
-        "Enter your choice or press Enter for default",
-        choices,
+        "Select CUDA version",
+        [f"Option {i}" for i in range(1, len(choices) + 1)],
         default=0
     )
     
-    if choice_idx == len(choices) - 1:  # "Other" option
-        cuda_version = prompt_input("Enter CUDA version manually")
+    if choice_idx == len(choices) - 1:  # Custom version option
+        cuda_version = prompt_input("Enter CUDA version (e.g., 12.4.0)")
+        if not cuda_version:
+            log_info("No version entered, using default 12.4.0")
+            cuda_version = "12.4.0"
     else:
-        cuda_version = choices[choice_idx]
+        # Extract version from the selected choice
+        cuda_version = list(cuda_versions.keys())[choice_idx]
     
     log_info(f"Selected CUDA version: {cuda_version}")
+    
+    # Show compatibility info if available
+    compat_info = get_cuda_compatibility_info(cuda_version)
+    if compat_info.get('min_driver'):
+        log_info(f"Minimum driver required: {compat_info['min_driver']}")
+    
+    if compat_info.get('features'):
+        log_info("Key features:")
+        for feature in compat_info['features']:
+            log_info(f"  • {feature}")
+    
     return cuda_version
 
 
@@ -52,14 +74,14 @@ def _load_cuda_versions():
     except FileNotFoundError:
         # Fallback to hardcoded versions
         return {
-            "12.4.0": "Latest stable release",
-            "12.3.2": "Previous stable",
-            "12.2.2": "LTS candidate",
-            "12.1.1": "Stable release",
-            "12.0.1": "Major version baseline",
-            "11.8.0": "Legacy support",
-            "11.7.1": "Legacy stable",
-            "11.6.2": "Older legacy"
+            "12.4.0": "Latest stable release - RTX 40 series optimized",
+            "12.3.2": "Previous stable - Wide compatibility", 
+            "12.2.2": "LTS candidate - Enterprise ready",
+            "12.1.1": "Stable release - Good performance",
+            "12.0.1": "Major version baseline - Reliable",
+            "11.8.0": "Legacy support - Mature and stable",
+            "11.7.1": "Legacy stable - Proven compatibility",
+            "11.6.2": "Older legacy - Basic support"
         }
 
 
@@ -68,19 +90,65 @@ def get_cuda_compatibility_info(cuda_version):
     compatibility_info = {
         "12.4.0": {
             "min_driver": "550.54.15",
-            "features": ["Latest CUDA features", "RTX 40 series optimizations"]
+            "features": ["Latest CUDA features", "RTX 40 series optimizations", "Advanced AI/ML support"]
         },
         "12.3.2": {
             "min_driver": "545.23.08", 
-            "features": ["Stable performance", "Good compatibility"]
+            "features": ["Stable performance", "Good compatibility", "Mature ecosystem"]
+        },
+        "12.2.2": {
+            "min_driver": "535.86.10",
+            "features": ["LTS candidate", "Enterprise ready", "Long-term support"]
         },
         "11.8.0": {
             "min_driver": "520.61.05",
-            "features": ["Mature release", "Wide compatibility"]
+            "features": ["Mature release", "Wide compatibility", "Proven stability"]
+        },
+        "11.7.1": {
+            "min_driver": "515.43.04",
+            "features": ["Legacy stable", "Broad hardware support", "Well-tested"]
         }
     }
     
     return compatibility_info.get(cuda_version, {
-        "min_driver": "Unknown",
-        "features": ["Version-specific features"]
+        "min_driver": "Check NVIDIA documentation",
+        "features": ["Version-specific features available"]
     })
+
+
+def validate_cuda_version(version):
+    """Validate CUDA version format"""
+    try:
+        parts = version.split('.')
+        if len(parts) >= 2:
+            major = int(parts[0])
+            minor = int(parts[1])
+            return major >= 10  # Minimum CUDA 10.x
+    except:
+        return False
+    
+    return False
+
+
+def show_cuda_info():
+    """Display information about CUDA versions"""
+    info = """
+CUDA Version Information:
+
+CUDA (Compute Unified Device Architecture) is NVIDIA's parallel computing platform.
+For Docker containers, you select which CUDA version the containers will use.
+
+Key Points:
+• The CUDA version determines available features in containers
+• Newer versions support latest GPU features and optimizations  
+• Older versions provide broader compatibility
+• The host NVIDIA driver must support the selected CUDA version
+
+Recommendations:
+• RTX 30/40 series: Use CUDA 12.x for best performance
+• GTX 10/16 series: CUDA 11.8 provides good compatibility
+• Production environments: Consider LTS versions (12.2.2)
+• Development: Latest stable (12.4.0) for newest features
+"""
+    
+    print(info)

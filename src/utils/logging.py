@@ -39,4 +39,4 @@ def log_step(message):
 
 def log_success(message):
     """Log success message in bold green"""
-    print(f"{Colors.BOLD}{Colors.GREEN}[SUCCESS] {message}{Colors.RESET}")
+    print(f"{Colors.BOLD}{Colors.GREEN}✓ {message}{Colors.RESET}")

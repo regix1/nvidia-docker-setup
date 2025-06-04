@@ -4,21 +4,95 @@ A modular Python tool for installing and configuring NVIDIA drivers with Docker 
 
 ## Features
 
-- ✅ Automated NVIDIA driver installation with version selection
-- ✅ Docker installation with NVIDIA Container Toolkit
-- ✅ CUDA version management
-- ✅ Optional NVENC/NvFBC patches for unlimited sessions
-- ✅ Pre-configured templates for Plex and FFmpeg
-- ✅ Comprehensive system validation
-- ✅ Modular Python architecture for easy maintenance
+- ✅ **Smart Detection**: Automatically detects existing installations
+- ✅ **Interactive Menus**: Clear, user-friendly interface
+- ✅ **Selective Installation**: Install only what you need
+- ✅ **NVIDIA Driver Management**: Automated driver installation with version selection
+- ✅ **Docker Integration**: Complete Docker setup with NVIDIA Container Toolkit
+- ✅ **CUDA Version Control**: Easy CUDA version selection for containers
+- ✅ **NVENC Patches**: Optional patches for unlimited encoding sessions
+- ✅ **Media Server Templates**: Pre-configured Plex and FFmpeg setups
+- ✅ **Comprehensive Validation**: System checks and GPU capability testing
 
 ## Quick Start
 
 ```bash
-git clone <your-repo>
+# Clone the repository
+git clone <your-repo-url>
 cd nvidia-docker-setup
+
+# Run the installer (as regular user)
+chmod +x install.sh
+./install.sh
+
+# Run the main setup (as root)
 sudo python3 main.py
 ```
+
+## New Improved Interface
+
+The script now features a much cleaner interface:
+
+### 1. **System Detection**
+```
+System Status:
+  NVIDIA Driver: ✓ 550.67 
+  Docker:        ✓ 24.0.6
+  NVIDIA Runtime: ✓ Available
+```
+
+### 2. **Smart Menu System**
+```
+Select installation options:
+  1. Reinstall NVIDIA Drivers (Current: 550.67) ✓
+     Reinstall or update NVIDIA drivers
+
+  2. Reconfigure Docker (Current: 24.0.6) ✓  
+     Reconfigure Docker with NVIDIA support
+
+  3. Select CUDA Version
+     Choose CUDA version for containers
+
+  4. Apply NVIDIA Patches (NVENC/NvFBC)
+     Remove NVENC session limits and enable NvFBC
+
+  5. Configure for Media Servers
+     Optimize Docker for Plex/media processing
+
+  6. Complete Installation (All Components)
+     Install/configure everything automatically
+```
+
+### 3. **Clear CUDA Selection**
+```
+Available CUDA versions for containers:
+  1. 12.4.0 - Latest stable release - RTX 40 series optimized (recommended)
+  2. 12.3.2 - Previous stable - Wide compatibility
+  3. 12.2.2 - LTS candidate - Enterprise ready
+  4. 12.1.1 - Stable release - Good performance
+  5. 11.8.0 - Legacy support - Mature and stable
+  6. Enter custom version
+```
+
+## Key Improvements
+
+### **Better User Experience**
+- Detects what's already installed before asking to install
+- Shows current versions of installed components
+- Clear menu options with descriptions
+- No more confusing duplicate choices
+
+### **Smart Installation Logic**
+- Only asks to reinstall if something is already installed
+- Skips unnecessary steps automatically
+- Validates system state before proceeding
+- Provides clear feedback on what's happening
+
+### **Improved Error Handling**
+- Better validation of user inputs
+- Clearer error messages
+- Graceful handling of missing files
+- Recovery suggestions for common issues
 
 ## Requirements
 

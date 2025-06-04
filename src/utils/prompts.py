@@ -39,13 +39,12 @@ def prompt_choice(prompt, choices, default=None):
     Returns:
         int: Index of selected choice
     """
-    print(f"\n{prompt}")
-    for i, choice in enumerate(choices, 1):
-        marker = " (default)" if default is not None and i-1 == default else ""
-        print(f"  {i}. {choice}{marker}")
-    
     while True:
-        log_prompt(f"Enter your choice [1-{len(choices)}]: ")
+        if default is not None:
+            log_prompt(f"{prompt} [1-{len(choices)}, default: {default + 1}]: ")
+        else:
+            log_prompt(f"{prompt} [1-{len(choices)}]: ")
+        
         response = input().strip()
         
         if not response and default is not None:
