@@ -1,0 +1,857 @@
+[
+    {
+        "label": "json",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "json",
+        "description": "json",
+        "detail": "json",
+        "documentation": {}
+    },
+    {
+        "label": "os",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "os",
+        "description": "os",
+        "detail": "os",
+        "documentation": {}
+    },
+    {
+        "label": "shutil",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "shutil",
+        "description": "shutil",
+        "detail": "shutil",
+        "documentation": {}
+    },
+    {
+        "label": "log_info",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_step",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_info",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_warn",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_step",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_info",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_step",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_info",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_warn",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_error",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_step",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_info",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_step",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_warn",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_info",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_warn",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_error",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_step",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_error",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_step",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_info",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_success",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "prompt_yes_no",
+        "importPath": "utils.prompts",
+        "description": "utils.prompts",
+        "isExtraImport": true,
+        "detail": "utils.prompts",
+        "documentation": {}
+    },
+    {
+        "label": "prompt_choice",
+        "importPath": "utils.prompts",
+        "description": "utils.prompts",
+        "isExtraImport": true,
+        "detail": "utils.prompts",
+        "documentation": {}
+    },
+    {
+        "label": "prompt_input",
+        "importPath": "utils.prompts",
+        "description": "utils.prompts",
+        "isExtraImport": true,
+        "detail": "utils.prompts",
+        "documentation": {}
+    },
+    {
+        "label": "prompt_yes_no",
+        "importPath": "utils.prompts",
+        "description": "utils.prompts",
+        "isExtraImport": true,
+        "detail": "utils.prompts",
+        "documentation": {}
+    },
+    {
+        "label": "prompt_input",
+        "importPath": "utils.prompts",
+        "description": "utils.prompts",
+        "isExtraImport": true,
+        "detail": "utils.prompts",
+        "documentation": {}
+    },
+    {
+        "label": "prompt_choice",
+        "importPath": "utils.prompts",
+        "description": "utils.prompts",
+        "isExtraImport": true,
+        "detail": "utils.prompts",
+        "documentation": {}
+    },
+    {
+        "label": "prompt_yes_no",
+        "importPath": "utils.prompts",
+        "description": "utils.prompts",
+        "isExtraImport": true,
+        "detail": "utils.prompts",
+        "documentation": {}
+    },
+    {
+        "label": "prompt_yes_no",
+        "importPath": "utils.prompts",
+        "description": "utils.prompts",
+        "isExtraImport": true,
+        "detail": "utils.prompts",
+        "documentation": {}
+    },
+    {
+        "label": "prompt_acknowledge",
+        "importPath": "utils.prompts",
+        "description": "utils.prompts",
+        "isExtraImport": true,
+        "detail": "utils.prompts",
+        "documentation": {}
+    },
+    {
+        "label": "prompt_yes_no",
+        "importPath": "utils.prompts",
+        "description": "utils.prompts",
+        "isExtraImport": true,
+        "detail": "utils.prompts",
+        "documentation": {}
+    },
+    {
+        "label": "prompt_choice",
+        "importPath": "utils.prompts",
+        "description": "utils.prompts",
+        "isExtraImport": true,
+        "detail": "utils.prompts",
+        "documentation": {}
+    },
+    {
+        "label": "run_command",
+        "importPath": "utils.system",
+        "description": "utils.system",
+        "isExtraImport": true,
+        "detail": "utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "run_command",
+        "importPath": "utils.system",
+        "description": "utils.system",
+        "isExtraImport": true,
+        "detail": "utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "AptManager",
+        "importPath": "utils.system",
+        "description": "utils.system",
+        "isExtraImport": true,
+        "detail": "utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "get_os_info",
+        "importPath": "utils.system",
+        "description": "utils.system",
+        "isExtraImport": true,
+        "detail": "utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "run_command",
+        "importPath": "utils.system",
+        "description": "utils.system",
+        "isExtraImport": true,
+        "detail": "utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "AptManager",
+        "importPath": "utils.system",
+        "description": "utils.system",
+        "isExtraImport": true,
+        "detail": "utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "run_command",
+        "importPath": "utils.system",
+        "description": "utils.system",
+        "isExtraImport": true,
+        "detail": "utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "run_command",
+        "importPath": "utils.system",
+        "description": "utils.system",
+        "isExtraImport": true,
+        "detail": "utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "AptManager",
+        "importPath": "utils.system",
+        "description": "utils.system",
+        "isExtraImport": true,
+        "detail": "utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "cleanup_nvidia_repos",
+        "importPath": "utils.system",
+        "description": "utils.system",
+        "isExtraImport": true,
+        "detail": "utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "check_internet",
+        "importPath": "utils.system",
+        "description": "utils.system",
+        "isExtraImport": true,
+        "detail": "utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "get_os_info",
+        "importPath": "utils.system",
+        "description": "utils.system",
+        "isExtraImport": true,
+        "detail": "utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "check_nvidia_gpu",
+        "importPath": "utils.system",
+        "description": "utils.system",
+        "isExtraImport": true,
+        "detail": "utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "subprocess",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "subprocess",
+        "description": "subprocess",
+        "detail": "subprocess",
+        "documentation": {}
+    },
+    {
+        "label": "tempfile",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "tempfile",
+        "description": "tempfile",
+        "detail": "tempfile",
+        "documentation": {}
+    },
+    {
+        "label": "sys",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "sys",
+        "description": "sys",
+        "detail": "sys",
+        "documentation": {}
+    },
+    {
+        "label": "traceback",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "traceback",
+        "description": "traceback",
+        "detail": "traceback",
+        "documentation": {}
+    },
+    {
+        "label": "run_preliminary_checks",
+        "importPath": "system.checks",
+        "description": "system.checks",
+        "isExtraImport": true,
+        "detail": "system.checks",
+        "documentation": {}
+    },
+    {
+        "label": "detect_existing_installations",
+        "importPath": "system.checks",
+        "description": "system.checks",
+        "isExtraImport": true,
+        "detail": "system.checks",
+        "documentation": {}
+    },
+    {
+        "label": "check_gpu_capabilities",
+        "importPath": "system.checks",
+        "description": "system.checks",
+        "isExtraImport": true,
+        "detail": "system.checks",
+        "documentation": {}
+    },
+    {
+        "label": "select_nvidia_driver",
+        "importPath": "nvidia.drivers",
+        "description": "nvidia.drivers",
+        "isExtraImport": true,
+        "detail": "nvidia.drivers",
+        "documentation": {}
+    },
+    {
+        "label": "select_cuda_version",
+        "importPath": "nvidia.cuda",
+        "description": "nvidia.cuda",
+        "isExtraImport": true,
+        "detail": "nvidia.cuda",
+        "documentation": {}
+    },
+    {
+        "label": "setup_docker",
+        "importPath": "docker.setup",
+        "description": "docker.setup",
+        "isExtraImport": true,
+        "detail": "docker.setup",
+        "documentation": {}
+    },
+    {
+        "label": "apply_nvidia_patches",
+        "importPath": "nvidia.patches",
+        "description": "nvidia.patches",
+        "isExtraImport": true,
+        "detail": "nvidia.patches",
+        "documentation": {}
+    },
+    {
+        "label": "configure_docker_for_media",
+        "importPath": "docker.config",
+        "description": "docker.config",
+        "isExtraImport": true,
+        "detail": "docker.config",
+        "documentation": {}
+    },
+    {
+        "label": "configure_docker_for_media",
+        "kind": 2,
+        "importPath": "src.docker.config",
+        "description": "src.docker.config",
+        "peekOfCode": "def configure_docker_for_media():\n    \"\"\"Configure Docker with optimized settings for NVIDIA media\"\"\"\n    log_step(\"Configuring Docker for media processing...\")\n    if not prompt_yes_no(\"Configure Docker with optimized settings for NVIDIA media?\"):\n        return\n    use_cgroupfs = prompt_yes_no(\n        \"Would you like to configure Docker to use cgroupfs driver? \"\n        \"(Fixes common 'CUDA_ERROR_NO_DEVICE' issues)\"\n    )\n    _create_docker_daemon_config(use_cgroupfs)",
+        "detail": "src.docker.config",
+        "documentation": {}
+    },
+    {
+        "label": "show_docker_info",
+        "kind": 2,
+        "importPath": "src.docker.config",
+        "description": "src.docker.config",
+        "peekOfCode": "def show_docker_info():\n    \"\"\"Display Docker configuration information\"\"\"\n    log_info(\"Docker Configuration Information:\")\n    try:\n        # Show Docker version\n        docker_version = run_command(\"docker --version\", capture_output=True)\n        log_info(f\"Docker Version: {docker_version}\")\n        # Show Docker info\n        docker_info = run_command(\"docker info\", capture_output=True)\n        # Extract relevant info",
+        "detail": "src.docker.config",
+        "documentation": {}
+    },
+    {
+        "label": "validate_nvidia_docker",
+        "kind": 2,
+        "importPath": "src.docker.config",
+        "description": "src.docker.config",
+        "peekOfCode": "def validate_nvidia_docker():\n    \"\"\"Validate NVIDIA Docker integration\"\"\"\n    log_info(\"Validating NVIDIA Docker integration...\")\n    try:\n        output = run_command(\n            \"docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi\",\n            capture_output=True\n        )\n        if \"NVIDIA-SMI\" in output:\n            log_info(\"✓ NVIDIA Docker integration is working\")",
+        "detail": "src.docker.config",
+        "documentation": {}
+    },
+    {
+        "label": "setup_docker",
+        "kind": 2,
+        "importPath": "src.docker.setup",
+        "description": "src.docker.setup",
+        "peekOfCode": "def setup_docker():\n    \"\"\"Setup Docker with NVIDIA support\"\"\"\n    log_step(\"Setting up Docker with NVIDIA support...\")\n    _remove_existing_docker()\n    _install_docker_prerequisites()\n    _setup_docker_repository()\n    _install_docker_packages()\n    _start_docker_service()\n    _setup_nvidia_container_toolkit()\n    _install_docker_compose()",
+        "detail": "src.docker.setup",
+        "documentation": {}
+    },
+    {
+        "label": "DOCKER_COMPOSE_VERSION",
+        "kind": 5,
+        "importPath": "src.docker.setup",
+        "description": "src.docker.setup",
+        "peekOfCode": "DOCKER_COMPOSE_VERSION = \"v2.25.0\"\ndef setup_docker():\n    \"\"\"Setup Docker with NVIDIA support\"\"\"\n    log_step(\"Setting up Docker with NVIDIA support...\")\n    _remove_existing_docker()\n    _install_docker_prerequisites()\n    _setup_docker_repository()\n    _install_docker_packages()\n    _start_docker_service()\n    _setup_nvidia_container_toolkit()",
+        "detail": "src.docker.setup",
+        "documentation": {}
+    },
+    {
+        "label": "select_cuda_version",
+        "kind": 2,
+        "importPath": "src.nvidia.cuda",
+        "description": "src.nvidia.cuda",
+        "peekOfCode": "def select_cuda_version():\n    \"\"\"Select CUDA version for installation\"\"\"\n    log_step(\"CUDA Version Selection\")\n    cuda_versions = _load_cuda_versions()\n    log_info(\"This selection determines which CUDA version will be used in Docker containers.\")\n    log_info(\"It does not install CUDA on the host - that's handled by the NVIDIA driver.\\n\")\n    # Prepare choices for the menu\n    choices = []\n    for version, description in cuda_versions.items():\n        choices.append(f\"{version} - {description}\")",
+        "detail": "src.nvidia.cuda",
+        "documentation": {}
+    },
+    {
+        "label": "get_cuda_compatibility_info",
+        "kind": 2,
+        "importPath": "src.nvidia.cuda",
+        "description": "src.nvidia.cuda",
+        "peekOfCode": "def get_cuda_compatibility_info(cuda_version):\n    \"\"\"Get compatibility information for CUDA version\"\"\"\n    compatibility_info = {\n        \"12.4.0\": {\n            \"min_driver\": \"550.54.15\",\n            \"features\": [\"Latest CUDA features\", \"RTX 40 series optimizations\", \"Advanced AI/ML support\"]\n        },\n        \"12.3.2\": {\n            \"min_driver\": \"545.23.08\", \n            \"features\": [\"Stable performance\", \"Good compatibility\", \"Mature ecosystem\"]",
+        "detail": "src.nvidia.cuda",
+        "documentation": {}
+    },
+    {
+        "label": "validate_cuda_version",
+        "kind": 2,
+        "importPath": "src.nvidia.cuda",
+        "description": "src.nvidia.cuda",
+        "peekOfCode": "def validate_cuda_version(version):\n    \"\"\"Validate CUDA version format\"\"\"\n    try:\n        parts = version.split('.')\n        if len(parts) >= 2:\n            major = int(parts[0])\n            minor = int(parts[1])\n            return major >= 10  # Minimum CUDA 10.x\n    except:\n        return False",
+        "detail": "src.nvidia.cuda",
+        "documentation": {}
+    },
+    {
+        "label": "show_cuda_info",
+        "kind": 2,
+        "importPath": "src.nvidia.cuda",
+        "description": "src.nvidia.cuda",
+        "peekOfCode": "def show_cuda_info():\n    \"\"\"Display information about CUDA versions\"\"\"\n    info = \"\"\"\nCUDA Version Information:\nCUDA (Compute Unified Device Architecture) is NVIDIA's parallel computing platform.\nFor Docker containers, you select which CUDA version the containers will use.\nKey Points:\n• The CUDA version determines available features in containers\n• Newer versions support latest GPU features and optimizations  \n• Older versions provide broader compatibility",
+        "detail": "src.nvidia.cuda",
+        "documentation": {}
+    },
+    {
+        "label": "select_nvidia_driver",
+        "kind": 2,
+        "importPath": "src.nvidia.drivers",
+        "description": "src.nvidia.drivers",
+        "peekOfCode": "def select_nvidia_driver():\n    \"\"\"Select and install NVIDIA driver\"\"\"\n    log_step(\"Selecting NVIDIA driver version...\")\n    # Check if drivers are already installed\n    current_driver = _check_existing_driver()\n    if current_driver:\n        _handle_existing_driver(current_driver)\n    else:\n        _install_new_driver()\n    _post_install_checks()",
+        "detail": "src.nvidia.drivers",
+        "documentation": {}
+    },
+    {
+        "label": "show_driver_info",
+        "kind": 2,
+        "importPath": "src.nvidia.drivers",
+        "description": "src.nvidia.drivers",
+        "peekOfCode": "def show_driver_info():\n    \"\"\"Display comprehensive information about NVIDIA drivers\"\"\"\n    info = \"\"\"\n╔══════════════════════════════════════════════════════════════╗\n║                   NVIDIA Driver Information                 ║\n╚══════════════════════════════════════════════════════════════╝\nNVIDIA drivers provide the interface between your GPU hardware and\nthe operating system, enabling GPU acceleration for applications.\nKey Components:\n• Kernel driver: Low-level hardware interface",
+        "detail": "src.nvidia.drivers",
+        "documentation": {}
+    },
+    {
+        "label": "apply_nvidia_patches",
+        "kind": 2,
+        "importPath": "src.nvidia.patches",
+        "description": "src.nvidia.patches",
+        "peekOfCode": "def apply_nvidia_patches():\n    \"\"\"Apply NVIDIA patches for unlimited sessions\"\"\"\n    log_step(\"NVIDIA NVENC & NvFBC unlimited sessions patch...\")\n    if not prompt_yes_no(\"Would you like to patch NVIDIA drivers to remove NVENC session limit?\"):\n        return\n    with tempfile.TemporaryDirectory() as temp_dir:\n        original_dir = os.getcwd()\n        try:\n            os.chdir(temp_dir)\n            _download_nvidia_patcher()",
+        "detail": "src.nvidia.patches",
+        "documentation": {}
+    },
+    {
+        "label": "check_patch_status",
+        "kind": 2,
+        "importPath": "src.nvidia.patches",
+        "description": "src.nvidia.patches",
+        "peekOfCode": "def check_patch_status():\n    \"\"\"Check if patches have been applied\"\"\"\n    log_info(\"Checking patch status...\")\n    try:\n        # Check if patched files exist (this is a simplified check)\n        nvidia_smi_output = run_command(\"nvidia-smi\", capture_output=True, check=False)\n        if nvidia_smi_output:\n            log_info(\"NVIDIA driver is functional\")\n            # Additional patch verification could be added here\n        else:",
+        "detail": "src.nvidia.patches",
+        "documentation": {}
+    },
+    {
+        "label": "show_patch_info",
+        "kind": 2,
+        "importPath": "src.nvidia.patches",
+        "description": "src.nvidia.patches",
+        "peekOfCode": "def show_patch_info():\n    \"\"\"Display information about available patches\"\"\"\n    info = \"\"\"\nNVIDIA Patches Available:\n1. NVENC Session Limit Patch:\n   - Removes the 2-session limit for consumer GPUs\n   - Allows unlimited simultaneous encoding sessions\n   - Useful for multiple containers or applications\n2. NvFBC Patch:\n   - Enables NvFBC (NVIDIA Frame Buffer Capture)",
+        "detail": "src.nvidia.patches",
+        "documentation": {}
+    },
+    {
+        "label": "run_preliminary_checks",
+        "kind": 2,
+        "importPath": "src.system.checks",
+        "description": "src.system.checks",
+        "peekOfCode": "def run_preliminary_checks():\n    \"\"\"Run all preliminary system checks\"\"\"\n    log_step(\"Running preliminary system checks...\")\n    _display_performance_recommendations()\n    _check_nvidia_gpu_present()\n    _offer_cleanup_option()\n    _check_ubuntu_version()\n    _install_dependencies()\n    _check_internet_connectivity()\ndef _display_performance_recommendations():",
+        "detail": "src.system.checks",
+        "documentation": {}
+    },
+    {
+        "label": "detect_existing_installations",
+        "kind": 2,
+        "importPath": "src.system.checks",
+        "description": "src.system.checks",
+        "peekOfCode": "def detect_existing_installations():\n    \"\"\"Detect what's already installed on the system\"\"\"\n    installations = {\n        'nvidia_driver': {'installed': False, 'version': None},\n        'docker': {'installed': False, 'version': None},\n        'nvidia_runtime': {'installed': False, 'version': None}\n    }\n    # Check NVIDIA driver\n    try:\n        nvidia_version = run_command(\"nvidia-smi --query-gpu=driver_version --format=csv,noheader\", ",
+        "detail": "src.system.checks",
+        "documentation": {}
+    },
+    {
+        "label": "check_gpu_capabilities",
+        "kind": 2,
+        "importPath": "src.system.checks",
+        "description": "src.system.checks",
+        "peekOfCode": "def check_gpu_capabilities():\n    \"\"\"Check GPU capabilities for media processing\"\"\"\n    log_step(\"Checking GPU capabilities for media processing...\")\n    try:\n        # Get GPU model\n        gpu_model = run_command(\n            \"nvidia-smi --query-gpu=gpu_name --format=csv,noheader\", \n            capture_output=True\n        )\n        log_info(f\"Detected GPU: {gpu_model}\")",
+        "detail": "src.system.checks",
+        "documentation": {}
+    },
+    {
+        "label": "Colors",
+        "kind": 6,
+        "importPath": "src.utils.logging",
+        "description": "src.utils.logging",
+        "peekOfCode": "class Colors:\n    \"\"\"ANSI color codes for terminal output\"\"\"\n    RESET = '\\033[0m'\n    BOLD = '\\033[1m'\n    RED = '\\033[1;31m'\n    GREEN = '\\033[1;32m'\n    YELLOW = '\\033[1;33m'\n    BLUE = '\\033[1;34m'\n    CYAN = '\\033[1;36m'\ndef log_info(message):",
+        "detail": "src.utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_info",
+        "kind": 2,
+        "importPath": "src.utils.logging",
+        "description": "src.utils.logging",
+        "peekOfCode": "def log_info(message):\n    \"\"\"Log info message in green\"\"\"\n    print(f\"{Colors.GREEN}[INFO]  {message}{Colors.RESET}\")\ndef log_warn(message):\n    \"\"\"Log warning message in yellow\"\"\"\n    print(f\"{Colors.YELLOW}[WARN]  {message}{Colors.RESET}\")\ndef log_error(message):\n    \"\"\"Log error message in red\"\"\"\n    print(f\"{Colors.RED}[ERROR] {message}{Colors.RESET}\")\ndef log_prompt(message):",
+        "detail": "src.utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_warn",
+        "kind": 2,
+        "importPath": "src.utils.logging",
+        "description": "src.utils.logging",
+        "peekOfCode": "def log_warn(message):\n    \"\"\"Log warning message in yellow\"\"\"\n    print(f\"{Colors.YELLOW}[WARN]  {message}{Colors.RESET}\")\ndef log_error(message):\n    \"\"\"Log error message in red\"\"\"\n    print(f\"{Colors.RED}[ERROR] {message}{Colors.RESET}\")\ndef log_prompt(message):\n    \"\"\"Log prompt message in cyan\"\"\"\n    print(f\"{Colors.CYAN}[INPUT] {message}{Colors.RESET}\", end='')\ndef log_step(message):",
+        "detail": "src.utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_error",
+        "kind": 2,
+        "importPath": "src.utils.logging",
+        "description": "src.utils.logging",
+        "peekOfCode": "def log_error(message):\n    \"\"\"Log error message in red\"\"\"\n    print(f\"{Colors.RED}[ERROR] {message}{Colors.RESET}\")\ndef log_prompt(message):\n    \"\"\"Log prompt message in cyan\"\"\"\n    print(f\"{Colors.CYAN}[INPUT] {message}{Colors.RESET}\", end='')\ndef log_step(message):\n    \"\"\"Log step message in blue with newline before\"\"\"\n    print(f\"\\n{Colors.BLUE}[STEP]  {message}{Colors.RESET}\")\ndef log_success(message):",
+        "detail": "src.utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_prompt",
+        "kind": 2,
+        "importPath": "src.utils.logging",
+        "description": "src.utils.logging",
+        "peekOfCode": "def log_prompt(message):\n    \"\"\"Log prompt message in cyan\"\"\"\n    print(f\"{Colors.CYAN}[INPUT] {message}{Colors.RESET}\", end='')\ndef log_step(message):\n    \"\"\"Log step message in blue with newline before\"\"\"\n    print(f\"\\n{Colors.BLUE}[STEP]  {message}{Colors.RESET}\")\ndef log_success(message):\n    \"\"\"Log success message in bold green\"\"\"\n    print(f\"{Colors.BOLD}{Colors.GREEN}✓ {message}{Colors.RESET}\")",
+        "detail": "src.utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_step",
+        "kind": 2,
+        "importPath": "src.utils.logging",
+        "description": "src.utils.logging",
+        "peekOfCode": "def log_step(message):\n    \"\"\"Log step message in blue with newline before\"\"\"\n    print(f\"\\n{Colors.BLUE}[STEP]  {message}{Colors.RESET}\")\ndef log_success(message):\n    \"\"\"Log success message in bold green\"\"\"\n    print(f\"{Colors.BOLD}{Colors.GREEN}✓ {message}{Colors.RESET}\")",
+        "detail": "src.utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_success",
+        "kind": 2,
+        "importPath": "src.utils.logging",
+        "description": "src.utils.logging",
+        "peekOfCode": "def log_success(message):\n    \"\"\"Log success message in bold green\"\"\"\n    print(f\"{Colors.BOLD}{Colors.GREEN}✓ {message}{Colors.RESET}\")",
+        "detail": "src.utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "prompt_yes_no",
+        "kind": 2,
+        "importPath": "src.utils.prompts",
+        "description": "src.utils.prompts",
+        "peekOfCode": "def prompt_yes_no(prompt, default='y'):\n    \"\"\"\n    Interactive yes/no prompt\n    Args:\n        prompt: Question to ask\n        default: Default answer ('y' or 'n')\n    Returns:\n        bool: True for yes, False for no\n    \"\"\"\n    while True:",
+        "detail": "src.utils.prompts",
+        "documentation": {}
+    },
+    {
+        "label": "prompt_choice",
+        "kind": 2,
+        "importPath": "src.utils.prompts",
+        "description": "src.utils.prompts",
+        "peekOfCode": "def prompt_choice(prompt, choices, default=None):\n    \"\"\"\n    Interactive multiple choice prompt\n    Args:\n        prompt: Question to ask\n        choices: List of choices\n        default: Default choice index (0-based)\n    Returns:\n        int: Index of selected choice\n    \"\"\"",
+        "detail": "src.utils.prompts",
+        "documentation": {}
+    },
+    {
+        "label": "prompt_input",
+        "kind": 2,
+        "importPath": "src.utils.prompts",
+        "description": "src.utils.prompts",
+        "peekOfCode": "def prompt_input(prompt, default=None, required=True):\n    \"\"\"\n    Interactive input prompt\n    Args:\n        prompt: Question to ask\n        default: Default value\n        required: Whether input is required\n    Returns:\n        str: User input or default\n    \"\"\"",
+        "detail": "src.utils.prompts",
+        "documentation": {}
+    },
+    {
+        "label": "prompt_acknowledge",
+        "kind": 2,
+        "importPath": "src.utils.prompts",
+        "description": "src.utils.prompts",
+        "peekOfCode": "def prompt_acknowledge(message, required_response):\n    \"\"\"\n    Force user to type specific text to acknowledge\n    Args:\n        message: Message to display\n        required_response: Exact text user must type\n    \"\"\"\n    print(f\"\\n{message}\\n\")\n    while True:\n        log_prompt(f\"Type '{required_response}' to acknowledge: \")",
+        "detail": "src.utils.prompts",
+        "documentation": {}
+    },
+    {
+        "label": "AptManager",
+        "kind": 6,
+        "importPath": "src.utils.system",
+        "description": "src.utils.system",
+        "peekOfCode": "class AptManager:\n    \"\"\"Manages apt operations with caching\"\"\"\n    def __init__(self):\n        self._update_cache = False\n    def update(self):\n        \"\"\"Update apt cache if not already done\"\"\"\n        if not self._update_cache:\n            run_command(\"apt-get update\")\n            self._update_cache = True\n    def install(self, *packages):",
+        "detail": "src.utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "run_command",
+        "kind": 2,
+        "importPath": "src.utils.system",
+        "description": "src.utils.system",
+        "peekOfCode": "def run_command(cmd, shell=True, check=True, capture_output=False):\n    \"\"\"\n    Execute a system command with logging\n    Args:\n        cmd: Command to execute (string or list)\n        shell: Whether to use shell\n        check: Whether to raise exception on failure\n        capture_output: Whether to capture and return output\n    Returns:\n        CompletedProcess object or output string if capture_output=True",
+        "detail": "src.utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "cleanup_nvidia_repos",
+        "kind": 2,
+        "importPath": "src.utils.system",
+        "description": "src.utils.system",
+        "peekOfCode": "def cleanup_nvidia_repos():\n    \"\"\"Clean up existing NVIDIA repository files and fix driver mismatches\"\"\"\n    log_info(\"Cleaning up NVIDIA repository files...\")\n    # Repository files to remove\n    repo_files = [\n        \"/etc/apt/sources.list.d/nvidia-docker.list\",\n        \"/etc/apt/sources.list.d/nvidia-container-toolkit.list\",\n        \"/etc/apt/sources.list.d/nvidia*.list\"\n    ]\n    # Keyring files to remove",
+        "detail": "src.utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "check_internet",
+        "kind": 2,
+        "importPath": "src.utils.system",
+        "description": "src.utils.system",
+        "peekOfCode": "def check_internet():\n    \"\"\"Check internet connectivity\"\"\"\n    try:\n        run_command(\"ping -c 1 8.8.8.8\", capture_output=True)\n        return True\n    except:\n        return False\ndef get_os_info():\n    \"\"\"Get OS information from /etc/os-release\"\"\"\n    try:",
+        "detail": "src.utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "get_os_info",
+        "kind": 2,
+        "importPath": "src.utils.system",
+        "description": "src.utils.system",
+        "peekOfCode": "def get_os_info():\n    \"\"\"Get OS information from /etc/os-release\"\"\"\n    try:\n        with open('/etc/os-release', 'r') as f:\n            lines = f.readlines()\n        info = {}\n        for line in lines:\n            if '=' in line:\n                key, value = line.strip().split('=', 1)\n                info[key] = value.strip('\"')",
+        "detail": "src.utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "check_nvidia_gpu",
+        "kind": 2,
+        "importPath": "src.utils.system",
+        "description": "src.utils.system",
+        "peekOfCode": "def check_nvidia_gpu():\n    \"\"\"Check if NVIDIA GPU is present\"\"\"\n    try:\n        output = run_command(\"lspci | grep -i nvidia\", capture_output=True, check=False)\n        return bool(output)\n    except:\n        return False",
+        "detail": "src.utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "show_banner",
+        "kind": 2,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "def show_banner():\n    \"\"\"Display application banner\"\"\"\n    banner = \"\"\"\n╔══════════════════════════════════════════════════════════════╗\n║                NVIDIA Docker Setup - Python                  ║\n║          Hardware Acceleration for Media Servers            ║\n╚══════════════════════════════════════════════════════════════╝\n\"\"\"\n    print(banner)\ndef show_main_menu(installations):",
+        "detail": "main",
+        "documentation": {}
+    },
+    {
+        "label": "show_main_menu",
+        "kind": 2,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "def show_main_menu(installations):\n    \"\"\"Show main installation menu based on detected installations\"\"\"\n    log_step(\"Installation Options\")\n    options = []\n    descriptions = []\n    # NVIDIA Drivers\n    if installations['nvidia_driver']['installed']:\n        nvidia_text = f\"Reinstall NVIDIA Drivers (Current: {installations['nvidia_driver']['version']})\"\n        nvidia_desc = \"Reinstall or update NVIDIA drivers\"\n    else:",
+        "detail": "main",
+        "documentation": {}
+    },
+    {
+        "label": "handle_menu_selection",
+        "kind": 2,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "def handle_menu_selection(choice, installations):\n    \"\"\"Handle the selected menu option\"\"\"\n    if choice == 0:  # NVIDIA Drivers\n        if installations['nvidia_driver']['installed']:\n            if prompt_yes_no(f\"NVIDIA driver {installations['nvidia_driver']['version']} is installed. Reinstall?\"):\n                select_nvidia_driver()\n        else:\n            select_nvidia_driver()\n    elif choice == 1:  # Docker\n        if installations['docker']['installed']:",
+        "detail": "main",
+        "documentation": {}
+    },
+    {
+        "label": "run_complete_installation",
+        "kind": 2,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "def run_complete_installation(installations):\n    \"\"\"Run complete installation process\"\"\"\n    log_step(\"Running Complete Installation\")\n    # Install/reinstall NVIDIA drivers if needed\n    if not installations['nvidia_driver']['installed'] or prompt_yes_no(\"Reinstall NVIDIA drivers?\"):\n        select_nvidia_driver()\n    # Select CUDA version\n    cuda_version = select_cuda_version()\n    # Install/reconfigure Docker\n    if not installations['docker']['installed'] or prompt_yes_no(\"Reconfigure Docker?\"):",
+        "detail": "main",
+        "documentation": {}
+    },
+    {
+        "label": "show_post_installation_summary",
+        "kind": 2,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "def show_post_installation_summary():\n    \"\"\"Show post-installation summary and next steps\"\"\"\n    log_success(\"Installation completed successfully!\")\n    summary = \"\"\"\n╔══════════════════════════════════════════════════════════════╗\n║                    Installation Summary                      ║\n╚══════════════════════════════════════════════════════════════╝\nNext Steps:\n1. Reboot your system for all changes to take effect\n2. Test NVIDIA Docker integration:",
+        "detail": "main",
+        "documentation": {}
+    },
+    {
+        "label": "main",
+        "kind": 2,
+        "importPath": "main",
+        "description": "main",
+        "peekOfCode": "def main():\n    \"\"\"Main installation process\"\"\"\n    try:\n        # Check if running as root\n        if os.geteuid() != 0:\n            log_error(\"This script must be run as root (sudo).\")\n            sys.exit(1)\n        show_banner()\n        # Run system checks\n        run_preliminary_checks()",
+        "detail": "main",
+        "documentation": {}
+    }
+]
