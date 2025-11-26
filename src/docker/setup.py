@@ -111,35 +111,49 @@ def _start_docker_service():
 
 
 def _setup_nvidia_container_toolkit():
-    """Setup NVIDIA Container Toolkit"""
+    """Setup NVIDIA Container Toolkit with Vulkan support"""
     log_info("Setting up NVIDIA Container Toolkit...")
-    
-    # Add NVIDIA GPG key
+
+    # Add NVIDIA GPG key using the latest method
     run_command(
         "curl -fsSL https://nvidia.github.io/libnvidia-container/gpgkey | "
-        "sudo gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg"
+        "gpg --dearmor -o /usr/share/keyrings/nvidia-container-toolkit-keyring.gpg --yes"
     )
-    
-    # Get distribution info
-    os_info = get_os_info()
-    distribution = f"{os_info.get('ID', 'ubuntu')}{os_info.get('VERSION_ID', '22.04')}"
-    
-    # Add NVIDIA repository
+
+    # Add NVIDIA repository using the stable/deb path (latest recommended method)
     repo_setup_cmd = (
-        f"curl -s -L https://nvidia.github.io/nvidia-container-runtime/{distribution}/nvidia-container-runtime.list | "
+        "curl -s -L https://nvidia.github.io/libnvidia-container/stable/deb/nvidia-container-toolkit.list | "
         "sed 's#deb https://#deb [signed-by=/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg] https://#g' | "
-        "sudo tee /etc/apt/sources.list.d/nvidia-container-toolkit.list"
+        "tee /etc/apt/sources.list.d/nvidia-container-toolkit.list"
     )
     run_command(repo_setup_cmd)
-    
-    # Install NVIDIA Container Toolkit
+
+    # Install NVIDIA Container Toolkit (latest version for Vulkan support)
     apt = AptManager()
     apt.install("nvidia-container-toolkit")
-    
+
+    # Check version (need 1.14+ for proper Vulkan support)
+    try:
+        version_output = run_command("nvidia-ctk --version", capture_output=True, check=False)
+        if version_output:
+            log_info(f"Installed: {version_output.strip()}")
+    except:
+        pass
+
     # Configure Docker to use NVIDIA runtime
     log_info("Configuring NVIDIA runtime for Docker...")
     run_command("nvidia-ctk runtime configure --runtime=docker")
-    
+
+    # Generate CDI specification for GPU access (important for Vulkan)
+    log_info("Generating CDI specification for GPU access...")
+    try:
+        run_command("mkdir -p /etc/cdi")
+        run_command("nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml")
+        log_info("CDI specification generated at /etc/cdi/nvidia.yaml")
+    except Exception as e:
+        log_warn(f"Could not generate CDI spec: {e}")
+        log_info("This is normal if NVIDIA driver is not yet loaded")
+
     # Restart Docker for changes to take effect
     log_info("Restarting Docker service to apply NVIDIA settings...")
     run_command("systemctl restart docker")
@@ -168,19 +182,49 @@ def _install_docker_compose():
 def _test_docker_installation():
     """Test Docker installation"""
     log_info("Testing Docker installation...")
-    
+
     try:
         # Test with hello-world
         run_command("docker run --rm hello-world", capture_output=True)
-        log_info("✓ Docker hello-world test passed")
-        
+        log_info("Docker hello-world test passed")
+
         # Test NVIDIA integration if possible
         try:
-            run_command("docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi", 
+            run_command("docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi",
                        capture_output=True, check=False)
-            log_info("✓ NVIDIA Docker integration test passed")
+            log_info("NVIDIA Docker integration test passed")
+
+            # Test Vulkan in container
+            _test_vulkan_in_container()
         except:
             log_warn("NVIDIA Docker test failed - driver may need reboot")
-            
+
     except Exception as e:
         log_warn(f"Docker test failed: {e}")
+
+
+def _test_vulkan_in_container():
+    """Test Vulkan support in Docker container"""
+    log_info("Testing Vulkan in Docker container...")
+
+    try:
+        # Run vulkaninfo in a container with all capabilities
+        output = run_command(
+            'docker run --rm --gpus all '
+            '-e NVIDIA_DRIVER_CAPABILITIES=all '
+            'nvidia/cuda:12.0-base '
+            'bash -c "apt-get update -qq && apt-get install -y -qq vulkan-tools 2>/dev/null && vulkaninfo --summary 2>&1 | head -30"',
+            capture_output=True, check=False
+        )
+
+        if output:
+            if "NVIDIA" in output:
+                log_info("Vulkan in container detected NVIDIA GPU")
+            elif "llvmpipe" in output.lower():
+                log_warn("Vulkan in container only sees software renderer")
+                log_info("This may be fixed after system reboot")
+            else:
+                log_info("Vulkan test completed - check output for GPU detection")
+    except Exception as e:
+        log_warn(f"Vulkan container test failed: {e}")
+        log_info("This is expected if driver needs reboot")

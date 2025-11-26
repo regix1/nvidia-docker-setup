@@ -255,17 +255,20 @@ def _get_latest_available_driver():
 def _install_driver_prerequisites():
     """Install prerequisites for driver installation"""
     log_info("Installing driver prerequisites...")
-    
+
     apt = AptManager()
     prerequisites = [
         "build-essential",
-        "dkms", 
+        "dkms",
         f"linux-headers-{_get_kernel_version()}",
         "ubuntu-drivers-common",
         "pkg-config",
-        "libglvnd-dev"
+        "libglvnd-dev",
+        # Vulkan prerequisites
+        "libvulkan1",
+        "vulkan-tools",
     ]
-    
+
     apt.install(*prerequisites)
 
 
@@ -335,60 +338,91 @@ def _install_specific_driver(version):
     """Install specific driver version"""
     package_name = f"nvidia-driver-{version}"
     log_info(f"Installing NVIDIA driver version {version}...")
-    
+
     try:
         apt = AptManager()
         apt.install(package_name)
-        log_info(f"✓ Successfully installed {package_name}")
+        log_info(f"Successfully installed {package_name}")
+
+        # Also install libnvidia-gl for Vulkan support
+        gl_package = f"libnvidia-gl-{version}"
+        log_info(f"Installing Vulkan/OpenGL support: {gl_package}")
+        try:
+            apt.install(gl_package)
+            log_info(f"Successfully installed {gl_package}")
+        except:
+            log_warn(f"Could not install {gl_package} - Vulkan may not work properly")
+
     except subprocess.CalledProcessError:
         log_error(f"Failed to install {package_name}")
-        
+
         # Try alternative package names
         alternatives = [
             f"nvidia-driver-{version}-server",
             f"nvidia-{version}",
         ]
-        
+
         for alt_package in alternatives:
             try:
                 log_info(f"Trying alternative package: {alt_package}")
                 apt.install(alt_package)
-                log_info(f"✓ Successfully installed {alt_package}")
+                log_info(f"Successfully installed {alt_package}")
                 return
             except:
                 continue
-        
+
         raise Exception(f"Could not install driver version {version}")
 
 
 def _post_install_checks():
     """Post-installation checks and module loading"""
     log_step("Performing post-installation checks...")
-    
+
     # Try to load nvidia module
     try:
         run_command("modprobe nvidia", check=False)
-        log_info("✓ NVIDIA kernel module loaded")
+        log_info("NVIDIA kernel module loaded")
     except:
         log_warn("Could not load nvidia module (normal before reboot)")
-    
+
     # Check if nvidia-smi works
     try:
         nvidia_smi_output = run_command("nvidia-smi", capture_output=True, check=False)
         if nvidia_smi_output and "NVIDIA-SMI" in nvidia_smi_output:
-            log_info("✓ NVIDIA drivers successfully installed and working!")
+            log_info("NVIDIA drivers successfully installed and working!")
             print("\nNVIDIA System Information:")
             print(nvidia_smi_output)
-            
+
             # Extract and display key info
             _display_driver_summary(nvidia_smi_output)
         else:
             log_warn("nvidia-smi not working yet - reboot required")
     except:
         log_warn("nvidia-smi not working yet - reboot required")
-    
+
     # Check for common issues
     _check_common_issues()
+
+    # Check Vulkan support
+    _check_vulkan_support()
+
+
+def _check_vulkan_support():
+    """Check if Vulkan is working with NVIDIA"""
+    log_info("Checking Vulkan support...")
+
+    try:
+        output = run_command("vulkaninfo --summary 2>&1", capture_output=True, check=False)
+        if output:
+            if "NVIDIA" in output:
+                log_info("Vulkan detected NVIDIA GPU")
+            elif "llvmpipe" in output.lower():
+                log_warn("Vulkan only detected software renderer (llvmpipe)")
+                log_info("NVIDIA Vulkan may work after reboot")
+            else:
+                log_info("Vulkan available - check GPU detection after reboot")
+    except:
+        log_info("vulkan-tools not available or Vulkan not working yet")
 
 
 def _display_driver_summary(nvidia_smi_output):

@@ -171,6 +171,46 @@
         "documentation": {}
     },
     {
+        "label": "log_success",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_info",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_warn",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_error",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
+        "label": "log_step",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
         "label": "log_error",
         "importPath": "utils.logging",
         "description": "utils.logging",
@@ -244,6 +284,14 @@
     },
     {
         "label": "prompt_choice",
+        "importPath": "utils.prompts",
+        "description": "utils.prompts",
+        "isExtraImport": true,
+        "detail": "utils.prompts",
+        "documentation": {}
+    },
+    {
+        "label": "prompt_yes_no",
         "importPath": "utils.prompts",
         "description": "utils.prompts",
         "isExtraImport": true,
@@ -363,6 +411,22 @@
         "documentation": {}
     },
     {
+        "label": "run_command",
+        "importPath": "utils.system",
+        "description": "utils.system",
+        "isExtraImport": true,
+        "detail": "utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "AptManager",
+        "importPath": "utils.system",
+        "description": "utils.system",
+        "isExtraImport": true,
+        "detail": "utils.system",
+        "documentation": {}
+    },
+    {
         "label": "cleanup_nvidia_repos",
         "importPath": "utils.system",
         "description": "utils.system",
@@ -422,6 +486,15 @@
         "documentation": {}
     },
     {
+        "label": "re",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "re",
+        "description": "re",
+        "detail": "re",
+        "documentation": {}
+    },
+    {
         "label": "traceback",
         "kind": 6,
         "isExtraImport": true,
@@ -440,6 +513,22 @@
     },
     {
         "label": "detect_existing_installations",
+        "importPath": "system.checks",
+        "description": "system.checks",
+        "isExtraImport": true,
+        "detail": "system.checks",
+        "documentation": {}
+    },
+    {
+        "label": "get_system_info",
+        "importPath": "system.checks",
+        "description": "system.checks",
+        "isExtraImport": true,
+        "detail": "system.checks",
+        "documentation": {}
+    },
+    {
+        "label": "display_system_info",
         "importPath": "system.checks",
         "description": "system.checks",
         "isExtraImport": true,
@@ -468,6 +557,30 @@
         "description": "nvidia.cuda",
         "isExtraImport": true,
         "detail": "nvidia.cuda",
+        "documentation": {}
+    },
+    {
+        "label": "setup_vulkan",
+        "importPath": "nvidia.vulkan",
+        "description": "nvidia.vulkan",
+        "isExtraImport": true,
+        "detail": "nvidia.vulkan",
+        "documentation": {}
+    },
+    {
+        "label": "check_vulkan_status",
+        "importPath": "nvidia.vulkan",
+        "description": "nvidia.vulkan",
+        "isExtraImport": true,
+        "detail": "nvidia.vulkan",
+        "documentation": {}
+    },
+    {
+        "label": "show_vulkan_info",
+        "importPath": "nvidia.vulkan",
+        "description": "nvidia.vulkan",
+        "isExtraImport": true,
+        "detail": "nvidia.vulkan",
         "documentation": {}
     },
     {
@@ -621,6 +734,60 @@
         "documentation": {}
     },
     {
+        "label": "setup_vulkan",
+        "kind": 2,
+        "importPath": "src.nvidia.vulkan",
+        "description": "src.nvidia.vulkan",
+        "peekOfCode": "def setup_vulkan():\n    \"\"\"Complete Vulkan setup for NVIDIA\"\"\"\n    log_step(\"Setting up Vulkan support for NVIDIA...\")\n    _install_vulkan_packages()\n    _verify_vulkan_icd()\n    _configure_vulkan_environment()\n    _test_vulkan_installation()\ndef _install_vulkan_packages():\n    \"\"\"Install required Vulkan packages\"\"\"\n    log_info(\"Installing Vulkan packages...\")",
+        "detail": "src.nvidia.vulkan",
+        "documentation": {}
+    },
+    {
+        "label": "check_vulkan_status",
+        "kind": 2,
+        "importPath": "src.nvidia.vulkan",
+        "description": "src.nvidia.vulkan",
+        "peekOfCode": "def check_vulkan_status():\n    \"\"\"Check and display Vulkan status\"\"\"\n    log_step(\"Checking Vulkan Status\")\n    status = {\n        'vulkan_loader': False,\n        'nvidia_icd': False,\n        'nvidia_detected': False,\n        'working': False\n    }\n    # Check Vulkan loader",
+        "detail": "src.nvidia.vulkan",
+        "documentation": {}
+    },
+    {
+        "label": "configure_docker_vulkan",
+        "kind": 2,
+        "importPath": "src.nvidia.vulkan",
+        "description": "src.nvidia.vulkan",
+        "peekOfCode": "def configure_docker_vulkan():\n    \"\"\"Configure Docker for Vulkan support\"\"\"\n    log_step(\"Configuring Docker for Vulkan support...\")\n    # Generate CDI spec for GPU access\n    log_info(\"Generating NVIDIA CDI specification...\")\n    try:\n        run_command(\"nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml\")\n        log_info(\"CDI specification generated\")\n    except Exception as e:\n        log_warn(f\"Could not generate CDI spec: {e}\")",
+        "detail": "src.nvidia.vulkan",
+        "documentation": {}
+    },
+    {
+        "label": "show_vulkan_info",
+        "kind": 2,
+        "importPath": "src.nvidia.vulkan",
+        "description": "src.nvidia.vulkan",
+        "peekOfCode": "def show_vulkan_info():\n    \"\"\"Display comprehensive Vulkan information\"\"\"\n    info = \"\"\"\n                    NVIDIA Vulkan Information\nWhat is Vulkan?\n  Vulkan is a low-level graphics and compute API that provides high-efficiency,\n  cross-platform access to GPUs. For NVIDIA GPUs, it enables GPU-accelerated\n  applications like video upscaling (NCNN), gaming, and compute workloads.\nKey Components:\n  - Vulkan Loader (libvulkan.so): Routes Vulkan calls to the GPU driver",
+        "detail": "src.nvidia.vulkan",
+        "documentation": {}
+    },
+    {
+        "label": "get_system_info",
+        "kind": 2,
+        "importPath": "src.system.checks",
+        "description": "src.system.checks",
+        "peekOfCode": "def get_system_info():\n    \"\"\"Gather comprehensive system information\"\"\"\n    info = {\n        'os': {},\n        'kernel': None,\n        'gpu': {},\n        'capabilities': {\n            'vulkan_supported': False,\n            'nvenc_supported': False,\n            'nvdec_supported': False,",
+        "detail": "src.system.checks",
+        "documentation": {}
+    },
+    {
+        "label": "display_system_info",
+        "kind": 2,
+        "importPath": "src.system.checks",
+        "description": "src.system.checks",
+        "peekOfCode": "def display_system_info(info):\n    \"\"\"Display system information in a formatted way\"\"\"\n    print(\"\\n\" + \"=\" * 60)\n    print(\"                    SYSTEM INFORMATION\")\n    print(\"=\" * 60)\n    # OS Info\n    print(f\"\\n  Operating System: {info['os']['pretty_name']}\")\n    print(f\"  Kernel:           {info['kernel']}\")\n    # GPU Info\n    if info['gpu'].get('name') or info['gpu'].get('model'):",
+        "detail": "src.system.checks",
+        "documentation": {}
+    },
+    {
         "label": "run_preliminary_checks",
         "kind": 2,
         "importPath": "src.system.checks",
@@ -634,7 +801,7 @@
         "kind": 2,
         "importPath": "src.system.checks",
         "description": "src.system.checks",
-        "peekOfCode": "def detect_existing_installations():\n    \"\"\"Detect what's already installed on the system\"\"\"\n    installations = {\n        'nvidia_driver': {'installed': False, 'version': None},\n        'docker': {'installed': False, 'version': None},\n        'nvidia_runtime': {'installed': False, 'version': None}\n    }\n    # Check NVIDIA driver\n    try:\n        nvidia_version = run_command(\"nvidia-smi --query-gpu=driver_version --format=csv,noheader\", ",
+        "peekOfCode": "def detect_existing_installations():\n    \"\"\"Detect what's already installed on the system\"\"\"\n    installations = {\n        'nvidia_driver': {'installed': False, 'version': None},\n        'docker': {'installed': False, 'version': None},\n        'nvidia_runtime': {'installed': False, 'version': None},\n        'vulkan': {'installed': False, 'version': None}\n    }\n    # Check NVIDIA driver\n    try:",
         "detail": "src.system.checks",
         "documentation": {}
     },
@@ -805,7 +972,7 @@
         "kind": 2,
         "importPath": "main",
         "description": "main",
-        "peekOfCode": "def show_banner():\n    \"\"\"Display application banner\"\"\"\n    banner = \"\"\"\n╔══════════════════════════════════════════════════════════════╗\n║                NVIDIA Docker Setup - Python                  ║\n║          Hardware Acceleration for Media Servers            ║\n╚══════════════════════════════════════════════════════════════╝\n\"\"\"\n    print(banner)\ndef show_main_menu(installations):",
+        "peekOfCode": "def show_banner():\n    \"\"\"Display application banner\"\"\"\n    banner = \"\"\"\n╔══════════════════════════════════════════════════════════════╗\n║                NVIDIA Docker Setup - Python                  ║\n║          Hardware Acceleration for Media Servers            ║\n╚══════════════════════════════════════════════════════════════╝\n\"\"\"\n    print(banner)\ndef show_main_menu(installations, system_info=None):",
         "detail": "main",
         "documentation": {}
     },
@@ -814,7 +981,7 @@
         "kind": 2,
         "importPath": "main",
         "description": "main",
-        "peekOfCode": "def show_main_menu(installations):\n    \"\"\"Show main installation menu based on detected installations\"\"\"\n    log_step(\"Installation Options\")\n    options = []\n    descriptions = []\n    # NVIDIA Drivers\n    if installations['nvidia_driver']['installed']:\n        nvidia_text = f\"Reinstall NVIDIA Drivers (Current: {installations['nvidia_driver']['version']})\"\n        nvidia_desc = \"Reinstall or update NVIDIA drivers\"\n    else:",
+        "peekOfCode": "def show_main_menu(installations, system_info=None):\n    \"\"\"Show main installation menu based on detected installations\"\"\"\n    log_step(\"Installation Options\")\n    options = []\n    descriptions = []\n    # NVIDIA Drivers\n    if installations['nvidia_driver']['installed']:\n        nvidia_text = f\"Reinstall NVIDIA Drivers (Current: {installations['nvidia_driver']['version']})\"\n        nvidia_desc = \"Reinstall or update NVIDIA drivers\"\n    else:",
         "detail": "main",
         "documentation": {}
     },
@@ -832,7 +999,7 @@
         "kind": 2,
         "importPath": "main",
         "description": "main",
-        "peekOfCode": "def run_complete_installation(installations):\n    \"\"\"Run complete installation process\"\"\"\n    log_step(\"Running Complete Installation\")\n    # Install/reinstall NVIDIA drivers if needed\n    if not installations['nvidia_driver']['installed'] or prompt_yes_no(\"Reinstall NVIDIA drivers?\"):\n        select_nvidia_driver()\n    # Select CUDA version\n    cuda_version = select_cuda_version()\n    # Install/reconfigure Docker\n    if not installations['docker']['installed'] or prompt_yes_no(\"Reconfigure Docker?\"):",
+        "peekOfCode": "def run_complete_installation(installations):\n    \"\"\"Run complete installation process\"\"\"\n    log_step(\"Running Complete Installation\")\n    # Install/reinstall NVIDIA drivers if needed\n    if not installations['nvidia_driver']['installed'] or prompt_yes_no(\"Reinstall NVIDIA drivers?\"):\n        select_nvidia_driver()\n    # Select CUDA version\n    cuda_version = select_cuda_version()\n    # Setup Vulkan support\n    if not installations['vulkan']['installed'] or \"NVIDIA\" not in str(installations['vulkan'].get('version', '')):",
         "detail": "main",
         "documentation": {}
     },
@@ -841,7 +1008,7 @@
         "kind": 2,
         "importPath": "main",
         "description": "main",
-        "peekOfCode": "def show_post_installation_summary():\n    \"\"\"Show post-installation summary and next steps\"\"\"\n    log_success(\"Installation completed successfully!\")\n    summary = \"\"\"\n╔══════════════════════════════════════════════════════════════╗\n║                    Installation Summary                      ║\n╚══════════════════════════════════════════════════════════════╝\nNext Steps:\n1. Reboot your system for all changes to take effect\n2. Test NVIDIA Docker integration:",
+        "peekOfCode": "def show_post_installation_summary():\n    \"\"\"Show post-installation summary and next steps\"\"\"\n    log_success(\"Installation completed successfully!\")\n    summary = \"\"\"\n======================================================================\n                       Installation Summary\n======================================================================\nNext Steps:\n1. Reboot your system for all changes to take effect\n2. Test NVIDIA Docker integration:",
         "detail": "main",
         "documentation": {}
     },
@@ -850,7 +1017,7 @@
         "kind": 2,
         "importPath": "main",
         "description": "main",
-        "peekOfCode": "def main():\n    \"\"\"Main installation process\"\"\"\n    try:\n        # Check if running as root\n        if os.geteuid() != 0:\n            log_error(\"This script must be run as root (sudo).\")\n            sys.exit(1)\n        show_banner()\n        # Run system checks\n        run_preliminary_checks()",
+        "peekOfCode": "def main():\n    \"\"\"Main installation process\"\"\"\n    try:\n        # Check if running as root\n        if os.geteuid() != 0:\n            log_error(\"This script must be run as root (sudo).\")\n            sys.exit(1)\n        show_banner()\n        # Gather and display system information first\n        log_step(\"Gathering System Information\")",
         "detail": "main",
         "documentation": {}
     }
