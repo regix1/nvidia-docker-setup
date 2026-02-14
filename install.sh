@@ -18,20 +18,16 @@ echo
 # Determine if we need sudo
 if [[ $EUID -eq 0 ]]; then
     SUDO=""
-    PIP_FLAGS=""
 else
     SUDO="sudo"
-    PIP_FLAGS="--user"
 fi
 
 # Check for required tools
 echo -e "${BLUE}Checking requirements...${NC}"
 
 if ! command -v python3 &> /dev/null; then
-    echo -e "${RED}Error: Python 3 is required but not installed.${NC}"
-    echo "Please install Python 3 first:"
-    echo "  ${SUDO} apt update && ${SUDO} apt install python3"
-    exit 1
+    echo -e "${YELLOW}Python 3 not found, installing...${NC}"
+    $SUDO apt update && $SUDO apt install -y python3
 fi
 
 if ! command -v git &> /dev/null; then
@@ -40,15 +36,6 @@ if ! command -v git &> /dev/null; then
 fi
 
 echo -e "${GREEN}✓ Requirements satisfied${NC}"
-
-# Install Python dependencies
-echo -e "${BLUE}Installing Python dependencies...${NC}"
-if [[ -f "requirements.txt" ]]; then
-    pip3 install $PIP_FLAGS -r requirements.txt
-    echo -e "${GREEN}✓ Dependencies installed${NC}"
-else
-    echo -e "${YELLOW}Warning: requirements.txt not found, continuing...${NC}"
-fi
 
 # Check directory structure
 echo -e "${BLUE}Checking project structure...${NC}"
@@ -74,24 +61,17 @@ done
 
 echo -e "${GREEN}✓ Project structure verified${NC}"
 
-# Make main.py executable
+# Make scripts executable
 chmod +x main.py
+chmod +x scripts/*.sh 2>/dev/null || true
 
 echo
-echo -e "${GREEN}Installation complete!${NC}"
+echo -e "${GREEN}Ready to go!${NC}"
 echo
 echo -e "${BLUE}Usage:${NC}"
 if [[ $EUID -eq 0 ]]; then
-    echo "  You're already root, run directly:"
     echo -e "    ${YELLOW}python3 main.py${NC}"
 else
-    echo "  Run the main script with sudo:"
     echo -e "    ${YELLOW}sudo python3 main.py${NC}"
 fi
-echo
-echo -e "${BLUE}What this script will do:${NC}"
-echo "  • Install NVIDIA drivers"
-echo "  • Install Docker with NVIDIA support"
-echo "  • Configure GPU acceleration for media servers"
-echo "  • Apply optional NVENC/NvFBC patches"
 echo
