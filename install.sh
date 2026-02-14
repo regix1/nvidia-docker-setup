@@ -15,12 +15,13 @@ echo -e "${BLUE}║                NVIDIA Docker Setup - Installer              
 echo -e "${BLUE}╚══════════════════════════════════════════════════════════════╝${NC}"
 echo
 
-# Check if running as root
+# Determine if we need sudo
 if [[ $EUID -eq 0 ]]; then
-    echo -e "${RED}Error: Do not run this installer as root!${NC}"
-    echo -e "${YELLOW}This installer will use sudo when needed.${NC}"
-    echo -e "${YELLOW}Please run as a regular user: ./install.sh${NC}"
-    exit 1
+    SUDO=""
+    PIP_FLAGS=""
+else
+    SUDO="sudo"
+    PIP_FLAGS="--user"
 fi
 
 # Check for required tools
@@ -29,13 +30,13 @@ echo -e "${BLUE}Checking requirements...${NC}"
 if ! command -v python3 &> /dev/null; then
     echo -e "${RED}Error: Python 3 is required but not installed.${NC}"
     echo "Please install Python 3 first:"
-    echo "  sudo apt update && sudo apt install python3"
+    echo "  ${SUDO} apt update && ${SUDO} apt install python3"
     exit 1
 fi
 
 if ! command -v git &> /dev/null; then
     echo -e "${YELLOW}Git not found, installing...${NC}"
-    sudo apt update && sudo apt install -y git
+    $SUDO apt update && $SUDO apt install -y git
 fi
 
 echo -e "${GREEN}✓ Requirements satisfied${NC}"
@@ -43,7 +44,7 @@ echo -e "${GREEN}✓ Requirements satisfied${NC}"
 # Install Python dependencies
 echo -e "${BLUE}Installing Python dependencies...${NC}"
 if [[ -f "requirements.txt" ]]; then
-    pip3 install --user -r requirements.txt
+    pip3 install $PIP_FLAGS -r requirements.txt
     echo -e "${GREEN}✓ Dependencies installed${NC}"
 else
     echo -e "${YELLOW}Warning: requirements.txt not found, continuing...${NC}"
@@ -80,18 +81,17 @@ echo
 echo -e "${GREEN}Installation complete!${NC}"
 echo
 echo -e "${BLUE}Usage:${NC}"
-echo "  Run the main script with sudo:"
-echo -e "    ${YELLOW}sudo python3 main.py${NC}"
-echo
-echo "  Or make it executable and run directly:"
-echo -e "    ${YELLOW}sudo ./main.py${NC}"
+if [[ $EUID -eq 0 ]]; then
+    echo "  You're already root, run directly:"
+    echo -e "    ${YELLOW}python3 main.py${NC}"
+else
+    echo "  Run the main script with sudo:"
+    echo -e "    ${YELLOW}sudo python3 main.py${NC}"
+fi
 echo
 echo -e "${BLUE}What this script will do:${NC}"
 echo "  • Install NVIDIA drivers"
 echo "  • Install Docker with NVIDIA support"
 echo "  • Configure GPU acceleration for media servers"
-echo "  • Apply optional NVENC patches"
-echo "  • Test GPU functionality"
-echo
-echo -e "${YELLOW}Note: You must run the main script as root (with sudo)${NC}"
+echo "  • Apply optional NVENC/NvFBC patches"
 echo

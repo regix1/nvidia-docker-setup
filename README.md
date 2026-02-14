@@ -1,4 +1,4 @@
-# NVIDIA Docker Setup - Python Version
+# NVIDIA Docker Setup
 
 A modular Python tool for installing and configuring NVIDIA drivers with Docker support, optimized for media processing and Plex servers.
 
@@ -10,42 +10,38 @@ A modular Python tool for installing and configuring NVIDIA drivers with Docker 
 - **NVIDIA Driver Management**: Automated driver installation with version selection
 - **Docker Integration**: Complete Docker setup with NVIDIA Container Toolkit
 - **CUDA Version Control**: Easy CUDA version selection for containers
-- **Vulkan Support**: Full Vulkan setup for GPU compute (NCNN, video upscaling)
-- **NVENC Patches**: Optional patches for unlimited encoding sessions
+- **NVENC/NvFBC Patches**: Binary-safe patches for unlimited encoding sessions
 - **Media Server Templates**: Pre-configured Plex and FFmpeg setups
-- **Comprehensive Validation**: System checks and GPU capability testing
+- **GPU Capability Testing**: System checks and validation
 
 ## Quick Start
 
 ```bash
-# Clone the repository
-git clone <your-repo-url>
+git clone https://github.com/regix1/nvidia-docker-setup.git
 cd nvidia-docker-setup
 
-# Run the installer (as regular user)
+# Run the installer
 chmod +x install.sh
-./install.sh
+./install.sh        # works as root or regular user
 
-# Run the main setup (as root)
+# Run the main setup
 sudo python3 main.py
 ```
 
-## New Improved Interface
+## Interface
 
-The script now features a much cleaner interface:
-
-### 1. **System Detection**
+### System Detection
 ```
-System Status:
-  NVIDIA Driver: ✓ 550.67 
-  Docker:        ✓ 24.0.6
-  NVIDIA Runtime: ✓ Available
+Installation Status:
+  NVIDIA Driver:  [OK] 580.126.09
+  Docker:         [OK] 28.0.1
+  NVIDIA Runtime: [OK] Available
 ```
 
-### 2. **Smart Menu System**
+### Menu System
 ```
 Select installation options:
-  1. Reinstall NVIDIA Drivers (Current: 580.95) [OK]
+  1. Reinstall NVIDIA Drivers (Current: 580.126.09) [OK]
      Reinstall or update NVIDIA drivers
 
   2. Reconfigure Docker (Current: 28.0.1) [OK]
@@ -54,20 +50,20 @@ Select installation options:
   3. Select CUDA Version
      Choose CUDA version for containers
 
-  4. Setup Vulkan Support [OK]
-     Install Vulkan for GPU compute (NCNN, etc.)
-
-  5. Apply NVIDIA Patches (NVENC/NvFBC)
+  4. Apply NVIDIA Patches (NVENC/NvFBC)
      Remove NVENC session limits and enable NvFBC
 
-  6. Configure for Media Servers
+  5. Configure for Media Servers
      Optimize Docker for Plex/media processing
 
-  7. Complete Installation (All Components)
+  6. Complete Installation (All Components)
      Install/configure everything automatically
+
+  7. Exit
+     Exit without changes
 ```
 
-### 3. **Clear CUDA Selection**
+### CUDA Selection
 ```
 Available CUDA versions for containers:
   1. 12.4.0 - Latest stable release - RTX 40 series optimized (recommended)
@@ -78,117 +74,59 @@ Available CUDA versions for containers:
   6. Enter custom version
 ```
 
-## Key Improvements
-
-### **Better User Experience**
-- Detects what's already installed before asking to install
-- Shows current versions of installed components
-- Clear menu options with descriptions
-- No more confusing duplicate choices
-
-### **Smart Installation Logic**
-- Only asks to reinstall if something is already installed
-- Skips unnecessary steps automatically
-- Validates system state before proceeding
-- Provides clear feedback on what's happening
-
-### **Improved Error Handling**
-- Better validation of user inputs
-- Clearer error messages
-- Graceful handling of missing files
-- Recovery suggestions for common issues
-
 ## Requirements
 
-- Ubuntu 22.04 (Jammy) - other versions may work but are untested
-- NVIDIA GPU (required)
+- Ubuntu 22.04+ (other Debian-based distros may work)
+- NVIDIA GPU
 - Root/sudo access
 - Internet connection
+- Python 3
 
 ## Project Structure
 
 ```
 nvidia-docker-setup/
 ├── main.py                 # Entry point
+├── install.sh              # Quick installer
 ├── requirements.txt        # Python dependencies
-├── src/                   # Source code modules
-│   ├── utils/            # Logging, system utilities, prompts
-│   ├── nvidia/           # NVIDIA driver, CUDA, Vulkan, patches
-│   │   ├── drivers.py    # Driver installation and management
-│   │   ├── cuda.py       # CUDA version selection
-│   │   ├── vulkan.py     # Vulkan setup and verification
-│   │   └── patches.py    # NVENC/NvFBC patches
-│   ├── docker/           # Docker setup and configuration
-│   └── system/           # System checks and validation
-├── templates/            # Configuration templates
+├── scripts/
+│   └── nvenc-patch.sh      # Binary-safe NVENC session limit patch
+├── src/
+│   ├── utils/              # Logging, system utilities, prompts
+│   ├── nvidia/
+│   │   ├── drivers.py      # Driver installation and management
+│   │   ├── cuda.py         # CUDA version selection
+│   │   └── patches.py      # NVENC/NvFBC patch orchestration
+│   ├── docker/             # Docker setup and configuration
+│   └── system/             # System checks and validation
+├── templates/
 │   ├── docker-daemon.json
 │   ├── docker-daemon-cgroupfs.json
 │   └── plex-nvidia.yml
-└── configs/             # Configuration files
+└── configs/
     └── cuda_versions.json
 ```
 
-## Installation Process
+## NVENC Session Limit Patch
 
-The script performs these steps:
+Consumer GeForce GPUs have an artificial limit on concurrent NVENC encoding sessions. This tool includes a custom binary patcher that removes the limit by modifying `libnvidia-encode.so`.
 
-1. **System Checks**: Validates OS, GPU presence, and dependencies
-2. **Performance Recommendations**: Displays kernel parameter suggestions
-3. **NVIDIA Drivers**: Installs or updates NVIDIA drivers
-4. **CUDA Selection**: Allows choosing CUDA version
-5. **Docker Setup**: Installs Docker with NVIDIA Container Toolkit
-6. **Optional Patches**: Applies NVENC/NvFBC patches if requested
-7. **Configuration**: Optimizes Docker for media processing
-8. **Validation**: Tests GPU capabilities and Docker integration
+**How it works:**
+- Uses Python3 to scan the binary for the session-check pattern
+- Anchor-based matching ensures only the correct location is patched (unlike sed-based approaches that can corrupt the binary)
+- Automatically detects the byte-pattern variant for the installed driver
+- Supports all modern NVIDIA driver versions
+- Creates a backup before patching with rollback support
 
-## Key Features
+```bash
+# The patch is applied automatically through the menu, or manually:
+sudo bash scripts/nvenc-patch.sh          # Apply patch
+sudo bash scripts/nvenc-patch.sh -n       # Dry-run (no changes)
+sudo bash scripts/nvenc-patch.sh -r       # Rollback from backup
+sudo bash scripts/nvenc-patch.sh -v       # Verbose output
+```
 
-### NVIDIA Driver Management
-- Automatic detection of recommended driver versions
-- Manual driver version selection
-- Driver cleanup and conflict resolution
-- Post-installation validation
-
-### Docker Integration
-- Complete Docker CE installation
-- NVIDIA Container Toolkit setup
-- Runtime configuration for GPU access
-- Optional cgroupfs driver for compatibility
-
-### Media Optimization
-- Pre-configured Plex docker-compose template
-- FFmpeg container examples
-- GPU-accelerated encoding/decoding setup
-- NVENC session limit removal
-
-### System Validation
-- GPU capability detection (NVENC/NVDEC)
-- Architecture compatibility checks
-- Docker-NVIDIA integration testing
-- Performance recommendations
-
-### Vulkan Support
-Vulkan is required for GPU compute applications like NCNN (video upscaling, AI inference):
-- Automatic installation of Vulkan libraries and tools
-- NVIDIA Vulkan ICD configuration
-- `libnvidia-gl` package installation for GPU-accelerated Vulkan
-- Container Device Interface (CDI) generation for Docker
-- Verification and diagnostic tools
-
-## Templates
-
-### Plex Media Server
-Located at `templates/plex-nvidia.yml`:
-- GPU-accelerated transcoding
-- Proper NVIDIA runtime configuration
-- Volume mapping examples
-- Environment variable setup
-
-### Docker Daemon Configuration
-- `docker-daemon.json`: Standard NVIDIA configuration
-- `docker-daemon-cgroupfs.json`: Alternative for compatibility issues
-
-## Usage Examples
+## Usage
 
 ### Basic Installation
 ```bash
@@ -205,53 +143,19 @@ cd /opt/docker-templates
 docker-compose -f plex-nvidia.yml up -d
 ```
 
-### Testing Vulkan Support
-```bash
-# Test Vulkan on host
-vulkaninfo --summary
+## Templates
 
-# Test Vulkan in Docker container
-docker run --rm --gpus all \
-  -e NVIDIA_DRIVER_CAPABILITIES=all \
-  nvidia/cuda:12.0-base \
-  bash -c "apt update && apt install -y vulkan-tools && vulkaninfo --summary"
-```
+### Plex Media Server
+Located at `templates/plex-nvidia.yml`:
+- GPU-accelerated transcoding
+- NVIDIA runtime configuration
+- Volume mapping examples
 
-### Docker Compose with Vulkan
-For containers requiring Vulkan (NCNN, video upscaling, AI inference):
-
-```yaml
-services:
-  my-vulkan-app:
-    image: your-image:latest
-    deploy:
-      resources:
-        reservations:
-          devices:
-            - driver: nvidia
-              count: all
-              capabilities: [gpu, compute, video, utility]
-    environment:
-      - NVIDIA_VISIBLE_DEVICES=all
-      - NVIDIA_DRIVER_CAPABILITIES=all
-      - VK_ICD_FILENAMES=/usr/share/vulkan/icd.d/nvidia_icd.json
-```
-
-### Manual Module Usage
-```python
-from src.nvidia.drivers import select_nvidia_driver
-from src.docker.setup import setup_docker
-
-# Install just NVIDIA drivers
-select_nvidia_driver()
-
-# Setup just Docker
-setup_docker()
-```
+### Docker Daemon Configuration
+- `docker-daemon.json`: Standard NVIDIA configuration
+- `docker-daemon-cgroupfs.json`: Alternative for compatibility issues
 
 ## Troubleshooting
-
-### Common Issues
 
 **"CUDA_ERROR_NO_DEVICE" in containers:**
 - Run the script and select cgroupfs driver option
@@ -265,24 +169,14 @@ setup_docker()
 - Add user to docker group: `sudo usermod -aG docker $USER`
 - Log out and back in
 
+**NVENC "incompatible client key" after patching:**
+- This usually means the wrong bytes were patched (common with sed-based tools)
+- Rollback: `sudo bash scripts/nvenc-patch.sh -r`
+- Re-apply with the included patcher which uses anchor-based matching
+
 **NVENC not working:**
-- Apply the NVENC patch when prompted
+- Apply the NVENC patch from the menu or run `sudo bash scripts/nvenc-patch.sh`
 - Verify GPU model supports NVENC
-
-**Vulkan showing "llvmpipe" (software renderer) instead of NVIDIA GPU:**
-- Ensure `libnvidia-gl-XXX` is installed (XXX = driver version number)
-- Update nvidia-container-toolkit: `sudo apt install nvidia-container-toolkit`
-- Regenerate CDI specification: `sudo nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml`
-- Restart Docker: `sudo systemctl restart docker`
-- Reboot the system if issues persist
-
-**Vulkan not working in Docker containers:**
-- Set `NVIDIA_DRIVER_CAPABILITIES=all` in your container environment
-- Verify the host has working Vulkan: `vulkaninfo --summary`
-- Check Vulkan ICD exists: `ls /usr/share/vulkan/icd.d/nvidia_icd.json`
-- Ensure nvidia-container-toolkit version 1.14+ is installed
-
-### Manual Fixes
 
 **Reset Docker NVIDIA configuration:**
 ```bash
@@ -294,7 +188,7 @@ sudo python3 main.py  # Re-run configuration
 **Check GPU status:**
 ```bash
 nvidia-smi
-docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi
+docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi
 ```
 
 ## Performance Recommendations
@@ -310,14 +204,6 @@ sudo update-grub
 sudo reboot
 ```
 
-## Contributing
-
-The modular structure makes it easy to:
-- Add new NVIDIA driver versions
-- Update Docker installation procedures  
-- Add new media server templates
-- Extend system validation checks
-
 ## License
 
 This project is provided as-is for educational and personal use.
@@ -325,5 +211,5 @@ This project is provided as-is for educational and personal use.
 ## Acknowledgments
 
 - NVIDIA for GPU drivers and Container Toolkit
-- [keylase/nvidia-patch](https://github.com/keylase/nvidia-patch) for NVENC patches
+- [keylase/nvidia-patch](https://github.com/keylase/nvidia-patch) for upstream NVENC patches
 - Docker for containerization platform
