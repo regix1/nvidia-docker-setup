@@ -67,6 +67,10 @@ is_valid_version() {
 }
 
 get_driver_version() {
+    # NOTE: Only 'echo' the final version to stdout.
+    # All diagnostic messages go to stderr so they don't pollute
+    # the captured output from DRIVER_VERSION=$(get_driver_version).
+
     if [[ -n "$MANUAL_VERSION" ]]; then
         echo "$MANUAL_VERSION"
         return 0
@@ -78,21 +82,21 @@ get_driver_version() {
     if command -v nvidia-smi &>/dev/null; then
         ver=$(nvidia-smi --query-gpu=driver_version --format=csv,noheader 2>/dev/null | head -n1 | tr -d '[:space:]') || true
         if [[ -n "$ver" ]] && is_valid_version "$ver"; then
-            print_verbose "Driver version detected via nvidia-smi: $ver"
+            print_verbose "Driver version detected via nvidia-smi: $ver" >&2
             echo "$ver"
             return 0
         fi
         if [[ -n "$ver" ]]; then
-            print_verbose "nvidia-smi returned invalid version string: $ver"
+            print_verbose "nvidia-smi returned invalid version string: $ver" >&2
         fi
-        print_warning "nvidia-smi failed or returned invalid output (driver/library version mismatch?)"
+        print_warning "nvidia-smi failed or returned invalid output (driver/library version mismatch?)" >&2
     fi
 
     # Method 2: Parse from installed libnvidia-encode.so filename (pick highest version)
     ver=$(find /usr/lib* /lib* -maxdepth 1 -name "libnvidia-encode.so.*.*.*" 2>/dev/null | grep -oP '\.so\.\K[0-9]+\.[0-9]+\.[0-9]+' | sort -t. -k1,1n -k2,2n -k3,3n | tail -1) || true
     if [[ -n "$ver" ]] && is_valid_version "$ver"; then
-        print_verbose "Driver version detected via library filename: $ver"
-        print_warning "Detected driver version from library filename (nvidia-smi unavailable)"
+        print_verbose "Driver version detected via library filename: $ver" >&2
+        print_warning "Detected driver version from library filename (nvidia-smi unavailable)" >&2
         echo "$ver"
         return 0
     fi
@@ -100,8 +104,8 @@ get_driver_version() {
     # Method 3: Read from modinfo
     ver=$(modinfo nvidia 2>/dev/null | grep '^version:' | awk '{print $2}') || true
     if [[ -n "$ver" ]] && is_valid_version "$ver"; then
-        print_verbose "Driver version detected via modinfo: $ver"
-        print_warning "Detected driver version from kernel module info (nvidia-smi unavailable)"
+        print_verbose "Driver version detected via modinfo: $ver" >&2
+        print_warning "Detected driver version from kernel module info (nvidia-smi unavailable)" >&2
         echo "$ver"
         return 0
     fi
@@ -109,16 +113,16 @@ get_driver_version() {
     # Method 4: Parse from dpkg
     ver=$(dpkg -l 'nvidia-driver-*' 2>/dev/null | awk '/^ii/ && $2 ~ /^nvidia-driver-[0-9]+$/ {print $3}' | head -1 | grep -oP '^[0-9]+\.[0-9]+\.[0-9]+') || true
     if [[ -n "$ver" ]] && is_valid_version "$ver"; then
-        print_verbose "Driver version detected via dpkg: $ver"
-        print_warning "Detected driver version from dpkg package info (nvidia-smi unavailable)"
+        print_verbose "Driver version detected via dpkg: $ver" >&2
+        print_warning "Detected driver version from dpkg package info (nvidia-smi unavailable)" >&2
         echo "$ver"
         return 0
     fi
 
     # All methods exhausted
-    print_error "Could not detect NVIDIA driver version via any method"
-    print_error "Tried: nvidia-smi, library filename, modinfo, dpkg"
-    print_error "Use -d VERSION to specify the driver version manually"
+    print_error "Could not detect NVIDIA driver version via any method" >&2
+    print_error "Tried: nvidia-smi, library filename, modinfo, dpkg" >&2
+    print_error "Use -d VERSION to specify the driver version manually" >&2
     exit 1
 }
 
@@ -141,7 +145,7 @@ find_library() {
 
     # Fallback: broad search
     local found
-    found=$(find /usr/lib* /lib* -name "libnvidia-encode.so.${version}" 2>/dev/null | head -n1)
+    found=$(find /usr/lib* /lib* -name "libnvidia-encode.so.${version}" 2>/dev/null | head -n1) || true
     if [[ -n "$found" ]]; then
         echo "$found"
         return 0

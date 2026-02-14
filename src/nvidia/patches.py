@@ -17,6 +17,9 @@ SCRIPTS_DIR = os.path.join(
     'scripts'
 )
 
+# Last known-good commit of keylase/nvidia-patch (before patch-fbc.sh syntax break)
+_UPSTREAM_PATCH_COMMIT = "2b16ade220d4"
+
 # Regex that matches a valid NVIDIA driver version string (e.g. 580.126.09)
 _VERSION_PATTERN = re.compile(r'^[0-9]+\.[0-9]+')
 
@@ -282,6 +285,7 @@ def _apply_upstream_script(script_name: str, label: str) -> None:
         try:
             os.chdir(tmp)
             run_command("git clone https://github.com/keylase/nvidia-patch.git .")
+            run_command(f"git checkout {_UPSTREAM_PATCH_COMMIT}")
             run_command(f"chmod +x {script_name}")
             run_command(f"bash ./{script_name}")
             log_success(f"{label} patch applied!")

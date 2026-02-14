@@ -646,7 +646,16 @@
         "kind": 5,
         "importPath": "src.nvidia.patches",
         "description": "src.nvidia.patches",
-        "peekOfCode": "SCRIPTS_DIR = os.path.join(\n    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),\n    'scripts'\n)\n# Regex that matches a valid NVIDIA driver version string (e.g. 580.126.09)\n_VERSION_PATTERN = re.compile(r'^[0-9]+\\.[0-9]+')\ndef apply_nvidia_patches() -> None:\n    \"\"\"Apply NVIDIA patches for unlimited NVENC sessions\"\"\"\n    log_step(\"NVIDIA NVENC & NvFBC unlimited sessions patch...\")\n    if not prompt_yes_no(\"Would you like to patch NVIDIA drivers to remove NVENC session limit?\"):",
+        "peekOfCode": "SCRIPTS_DIR = os.path.join(\n    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),\n    'scripts'\n)\n# Last known-good commit of keylase/nvidia-patch (before patch-fbc.sh syntax break)\n_UPSTREAM_PATCH_COMMIT = \"2b16ade220d4\"\n# Regex that matches a valid NVIDIA driver version string (e.g. 580.126.09)\n_VERSION_PATTERN = re.compile(r'^[0-9]+\\.[0-9]+')\ndef apply_nvidia_patches() -> None:\n    \"\"\"Apply NVIDIA patches for unlimited NVENC sessions\"\"\"",
+        "detail": "src.nvidia.patches",
+        "documentation": {}
+    },
+    {
+        "label": "_UPSTREAM_PATCH_COMMIT",
+        "kind": 5,
+        "importPath": "src.nvidia.patches",
+        "description": "src.nvidia.patches",
+        "peekOfCode": "_UPSTREAM_PATCH_COMMIT = \"2b16ade220d4\"\n# Regex that matches a valid NVIDIA driver version string (e.g. 580.126.09)\n_VERSION_PATTERN = re.compile(r'^[0-9]+\\.[0-9]+')\ndef apply_nvidia_patches() -> None:\n    \"\"\"Apply NVIDIA patches for unlimited NVENC sessions\"\"\"\n    log_step(\"NVIDIA NVENC & NvFBC unlimited sessions patch...\")\n    if not prompt_yes_no(\"Would you like to patch NVIDIA drivers to remove NVENC session limit?\"):\n        return\n    _apply_nvenc_patch()\n    if prompt_yes_no(\"Would you also like to patch for NvFBC support (useful for OBS)?\"):",
         "detail": "src.nvidia.patches",
         "documentation": {}
     },
