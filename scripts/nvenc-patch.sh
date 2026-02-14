@@ -60,25 +60,66 @@ EOF
     exit 0
 }
 
+# Validate that a string looks like an NVIDIA driver version (e.g. 580.126.09 or 535.183)
+is_valid_version() {
+    local candidate=$1
+    [[ "$candidate" =~ ^[0-9]+\.[0-9]+ ]]
+}
+
 get_driver_version() {
     if [[ -n "$MANUAL_VERSION" ]]; then
         echo "$MANUAL_VERSION"
         return 0
     fi
 
-    if ! command -v nvidia-smi &>/dev/null; then
-        print_error "nvidia-smi not found. Is the NVIDIA driver installed?"
-        exit 1
+    local ver=""
+
+    # Method 1: nvidia-smi (preferred, but fails after driver upgrade without reboot)
+    if command -v nvidia-smi &>/dev/null; then
+        ver=$(nvidia-smi --query-gpu=driver_version --format=csv,noheader 2>/dev/null | head -n1 | tr -d '[:space:]') || true
+        if [[ -n "$ver" ]] && is_valid_version "$ver"; then
+            print_verbose "Driver version detected via nvidia-smi: $ver"
+            echo "$ver"
+            return 0
+        fi
+        if [[ -n "$ver" ]]; then
+            print_verbose "nvidia-smi returned invalid version string: $ver"
+        fi
+        print_warning "nvidia-smi failed or returned invalid output (driver/library version mismatch?)"
     fi
 
-    local ver
-    ver=$(nvidia-smi --query-gpu=driver_version --format=csv,noheader 2>/dev/null | head -n1 | tr -d '[:space:]')
-
-    if [[ -z "$ver" ]]; then
-        print_error "Could not detect NVIDIA driver version"
-        exit 1
+    # Method 2: Parse from installed libnvidia-encode.so filename
+    ver=$(find /usr/lib* /lib* -maxdepth 1 -name "libnvidia-encode.so.*.*.*" 2>/dev/null | head -1 | grep -oP '\.so\.\K[0-9]+\.[0-9]+\.[0-9]+') || true
+    if [[ -n "$ver" ]] && is_valid_version "$ver"; then
+        print_verbose "Driver version detected via library filename: $ver"
+        print_warning "Detected driver version from library filename (nvidia-smi unavailable)"
+        echo "$ver"
+        return 0
     fi
-    echo "$ver"
+
+    # Method 3: Read from modinfo
+    ver=$(modinfo nvidia 2>/dev/null | grep '^version:' | awk '{print $2}') || true
+    if [[ -n "$ver" ]] && is_valid_version "$ver"; then
+        print_verbose "Driver version detected via modinfo: $ver"
+        print_warning "Detected driver version from kernel module info (nvidia-smi unavailable)"
+        echo "$ver"
+        return 0
+    fi
+
+    # Method 4: Parse from dpkg
+    ver=$(dpkg -l 'nvidia-driver-*' 2>/dev/null | awk '/^ii/ && $2 ~ /^nvidia-driver-[0-9]+$/ {print $3}' | head -1 | grep -oP '^[0-9]+\.[0-9]+\.[0-9]+') || true
+    if [[ -n "$ver" ]] && is_valid_version "$ver"; then
+        print_verbose "Driver version detected via dpkg: $ver"
+        print_warning "Detected driver version from dpkg package info (nvidia-smi unavailable)"
+        echo "$ver"
+        return 0
+    fi
+
+    # All methods exhausted
+    print_error "Could not detect NVIDIA driver version via any method"
+    print_error "Tried: nvidia-smi, library filename, modinfo, dpkg"
+    print_error "Use -d VERSION to specify the driver version manually"
+    exit 1
 }
 
 find_library() {

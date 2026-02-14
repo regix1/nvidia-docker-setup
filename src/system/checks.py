@@ -106,7 +106,9 @@ def _determine_gpu_capabilities(info):
     info['capabilities']['nvdec_supported'] = cc_value >= 3.0
 
     # Architecture name
-    if cc_value >= 8.9:
+    if cc_value >= 10.0:
+        info['gpu']['architecture'] = "Blackwell (RTX 50 series)"
+    elif cc_value >= 8.9:
         info['gpu']['architecture'] = "Ada Lovelace (RTX 40 series)"
     elif cc_value >= 8.0:
         info['gpu']['architecture'] = "Ampere (RTX 30 series)"
@@ -223,18 +225,33 @@ def _offer_cleanup_option():
 
 def _check_ubuntu_version():
     """Check Ubuntu version compatibility"""
-    EXPECTED_VERSION = "22.04"
-    
+    SUPPORTED_VERSIONS = ["22.04", "24.04"]
+
     os_info = get_os_info()
-    
-    if os_info.get('NAME') != 'Ubuntu' or os_info.get('VERSION_ID') != EXPECTED_VERSION:
-        pretty_name = os_info.get('PRETTY_NAME', 'Unknown OS')
-        warning_msg = f"This script is designed for Ubuntu {EXPECTED_VERSION}, but detected: {pretty_name}"
-        
-        if not prompt_yes_no(f"{warning_msg}. Continue anyway?"):
+    detected_name = os_info.get('NAME', '')
+    detected_version = os_info.get('VERSION_ID', '')
+    pretty_name = os_info.get('PRETTY_NAME', 'Unknown OS')
+
+    if detected_name != 'Ubuntu':
+        # Not Ubuntu at all (Debian, etc.)
+        warning_msg = (
+            f"This script is designed for Ubuntu ({', '.join(SUPPORTED_VERSIONS)}), "
+            f"but detected: {pretty_name}. "
+            f"It may work on Debian-based systems but is not tested."
+        )
+        if not prompt_yes_no(f"{warning_msg} Continue anyway?"):
+            sys.exit(1)
+    elif detected_version not in SUPPORTED_VERSIONS:
+        # Ubuntu but unsupported version
+        warning_msg = (
+            f"This script supports Ubuntu {', '.join(SUPPORTED_VERSIONS)}, "
+            f"but detected Ubuntu {detected_version} ({pretty_name}). "
+            f"It may still work but has not been tested on this version."
+        )
+        if not prompt_yes_no(f"{warning_msg} Continue anyway?"):
             sys.exit(1)
     else:
-        log_info(f"✓ Ubuntu {EXPECTED_VERSION} detected")
+        log_info(f"Ubuntu {detected_version} detected (supported)")
 
 
 def _install_dependencies():
@@ -274,10 +291,15 @@ def detect_existing_installations():
     try:
         nvidia_version = run_command("nvidia-smi --query-gpu=driver_version --format=csv,noheader",
                                    capture_output=True, check=False)
-        if nvidia_version and not "command not found" in nvidia_version.lower():
+        error_indicators = [
+            "command not found",
+            "failed to initialize nvml",
+            "driver/library version mismatch",
+        ]
+        if nvidia_version and not any(err in nvidia_version.lower() for err in error_indicators):
             installations['nvidia_driver']['installed'] = True
             installations['nvidia_driver']['version'] = nvidia_version.strip()
-    except:
+    except Exception:
         pass
 
     # Check Docker

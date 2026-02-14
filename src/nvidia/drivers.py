@@ -158,27 +158,34 @@ def _show_driver_compatibility_info():
 ╚══════════════════════════════════════════════════════════════╝
 
 Driver Series Overview:
-• 565.x series: Latest features, RTX 40 series optimized, CUDA 12.4+ support
-• 560.x series: Stable release, good compatibility, CUDA 12.3+ support  
+• 590.x series: Newest features, RTX 50 series optimized, CUDA 13.0+ support
+• 580.x series: Latest stable, RTX 50/40 series optimized, CUDA 13.0+ support
+• 570.x series: Recent stable, RTX 40 series optimized, CUDA 12.8+ support
+• 565.x series: Stable release, RTX 40 series optimized, CUDA 12.4+ support
+• 560.x series: Stable release, good compatibility, CUDA 12.3+ support
 • 550.x series: LTS candidate, enterprise ready, CUDA 12.2+ support
 • 535.x series: Previous LTS, mature and stable, CUDA 12.0+ support
 • 525.x series: Legacy stable, broad compatibility, CUDA 11.8+ support
 
 Hardware Recommendations:
+• RTX 50 series (5090, 5080, etc.): Use 580.x or newer
 • RTX 40 series (4090, 4080, etc.): Use 565.x or newer
-• RTX 30 series (3090, 3080, etc.): Use 550.x or newer  
+• RTX 30 series (3090, 3080, etc.): Use 550.x or newer
 • RTX 20 series (2080, 2070, etc.): Use 535.x or newer
 • GTX 16/10 series: Use 525.x or newer for best compatibility
 
 Usage Recommendations:
-• Gaming/Latest features: Use newest available (565.x+)
+• Gaming/Latest features: Use newest available (580.x+)
 • Production/Stability: Use LTS versions (535.x, 550.x)
 • Container workloads: Match with intended CUDA version
 • Older hardware: Consider 525.x or 470.x series
 
 CUDA Version Support:
+• Driver 590.x+: CUDA 13.0, 12.4, 12.3, 12.2, 12.1, 12.0, 11.8
+• Driver 580.x+: CUDA 13.0, 12.4, 12.3, 12.2, 12.1, 12.0, 11.8
+• Driver 570.x+: CUDA 12.8, 12.4, 12.3, 12.2, 12.1, 12.0, 11.8
 • Driver 565.x+: CUDA 12.4, 12.3, 12.2, 12.1, 12.0, 11.8
-• Driver 550.x+: CUDA 12.2, 12.1, 12.0, 11.8, 11.7  
+• Driver 550.x+: CUDA 12.2, 12.1, 12.0, 11.8, 11.7
 • Driver 535.x+: CUDA 12.0, 11.8, 11.7, 11.6
 • Driver 525.x+: CUDA 11.8, 11.7, 11.6, 11.5
 """
@@ -194,6 +201,9 @@ def _get_cuda_support(driver_version):
         return []
     
     cuda_support = {
+        590: ["13.0.0", "12.4.0", "12.3.2", "12.2.2", "12.1.1", "12.0.1", "11.8.0"],
+        580: ["13.0.0", "12.4.0", "12.3.2", "12.2.2", "12.1.1", "12.0.1", "11.8.0"],
+        570: ["12.8.0", "12.4.0", "12.3.2", "12.2.2", "12.1.1", "12.0.1", "11.8.0"],
         565: ["12.4.0", "12.3.2", "12.2.2", "12.1.1", "12.0.1", "11.8.0"],
         560: ["12.3.2", "12.2.2", "12.1.1", "12.0.1", "11.8.0", "11.7.1"],
         550: ["12.2.2", "12.1.1", "12.0.1", "11.8.0", "11.7.1", "11.6.2"],

@@ -25,18 +25,17 @@ def setup_docker():
 def _remove_existing_docker():
     """Remove any existing Docker installations"""
     log_info("Removing any existing Docker installations...")
-    
+
     packages_to_remove = [
-        "docker.io", "docker-doc", "docker-compose", 
+        "docker.io", "docker-doc", "docker-compose",
         "docker-compose-v2", "podman-docker", "containerd", "runc"
     ]
-    
+
     apt = AptManager()
-    for package in packages_to_remove:
-        try:
-            apt.remove(package)
-        except:
-            pass  # Package might not be installed
+    try:
+        apt.remove(*packages_to_remove, check=False)
+    except Exception:
+        pass  # Some packages might not be installed
 
 
 def _install_docker_prerequisites():
@@ -62,7 +61,10 @@ def _setup_docker_repository():
     
     # Add Docker repository
     os_info = get_os_info()
-    codename = os_info.get('UBUNTU_CODENAME') or os_info.get('VERSION_CODENAME', 'jammy')
+    codename = os_info.get('UBUNTU_CODENAME') or os_info.get('VERSION_CODENAME', '')
+    if not codename:
+        log_warn("Could not determine Ubuntu codename from /etc/os-release")
+        return
     
     repo_line = (
         f'deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] '
@@ -70,6 +72,9 @@ def _setup_docker_repository():
     )
     
     run_command(f'echo "{repo_line}" | tee /etc/apt/sources.list.d/docker.list > /dev/null')
+
+    # Reset apt cache so the newly added Docker repo is picked up
+    AptManager.reset_cache()
 
 
 def _install_docker_packages():
@@ -94,7 +99,7 @@ def _start_docker_service():
     
     try:
         run_command("systemctl restart docker")
-    except:
+    except Exception:
         run_command("systemctl start docker")
     
     # Check Docker version and status
@@ -128,7 +133,8 @@ def _setup_nvidia_container_toolkit():
     )
     run_command(repo_setup_cmd)
 
-    # Install NVIDIA Container Toolkit (latest version for Vulkan support)
+    # Reset apt cache so the newly added NVIDIA repo is picked up
+    AptManager.reset_cache()
     apt = AptManager()
     apt.install("nvidia-container-toolkit")
 
@@ -137,7 +143,7 @@ def _setup_nvidia_container_toolkit():
         version_output = run_command("nvidia-ctk --version", capture_output=True, check=False)
         if version_output:
             log_info(f"Installed: {version_output.strip()}")
-    except:
+    except Exception:
         pass
 
     # Configure Docker to use NVIDIA runtime
@@ -196,7 +202,7 @@ def _test_docker_installation():
 
             # Test Vulkan in container
             _test_vulkan_in_container()
-        except:
+        except Exception:
             log_warn("NVIDIA Docker test failed - driver may need reboot")
 
     except Exception as e:

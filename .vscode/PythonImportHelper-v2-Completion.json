@@ -147,6 +147,14 @@
         "documentation": {}
     },
     {
+        "label": "log_error",
+        "importPath": "utils.logging",
+        "description": "utils.logging",
+        "isExtraImport": true,
+        "detail": "utils.logging",
+        "documentation": {}
+    },
+    {
         "label": "log_info",
         "importPath": "utils.logging",
         "description": "utils.logging",
@@ -412,21 +420,12 @@
         "documentation": {}
     },
     {
-        "label": "tempfile",
+        "label": "glob",
         "kind": 6,
         "isExtraImport": true,
-        "importPath": "tempfile",
-        "description": "tempfile",
-        "detail": "tempfile",
-        "documentation": {}
-    },
-    {
-        "label": "sys",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "sys",
-        "description": "sys",
-        "detail": "sys",
+        "importPath": "glob",
+        "description": "glob",
+        "detail": "glob",
         "documentation": {}
     },
     {
@@ -436,6 +435,32 @@
         "importPath": "re",
         "description": "re",
         "detail": "re",
+        "documentation": {}
+    },
+    {
+        "label": "tempfile",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "tempfile",
+        "description": "tempfile",
+        "detail": "tempfile",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "sys",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "sys",
+        "description": "sys",
+        "detail": "sys",
         "documentation": {}
     },
     {
@@ -568,7 +593,7 @@
         "kind": 2,
         "importPath": "src.nvidia.cuda",
         "description": "src.nvidia.cuda",
-        "peekOfCode": "def get_cuda_compatibility_info(cuda_version):\n    \"\"\"Get compatibility information for CUDA version\"\"\"\n    compatibility_info = {\n        \"12.4.0\": {\n            \"min_driver\": \"550.54.15\",\n            \"features\": [\"Latest CUDA features\", \"RTX 40 series optimizations\", \"Advanced AI/ML support\"]\n        },\n        \"12.3.2\": {\n            \"min_driver\": \"545.23.08\", \n            \"features\": [\"Stable performance\", \"Good compatibility\", \"Mature ecosystem\"]",
+        "peekOfCode": "def get_cuda_compatibility_info(cuda_version):\n    \"\"\"Get compatibility information for CUDA version\"\"\"\n    compatibility_info = {\n        \"13.0.0\": {\n            \"min_driver\": \"570.86.15\",\n            \"features\": [\"Latest CUDA architecture\", \"RTX 50 series support\", \"Enhanced AI/ML performance\"]\n        },\n        \"12.8.0\": {\n            \"min_driver\": \"570.86.15\",\n            \"features\": [\"Recent CUDA features\", \"Broad GPU support\", \"Stable performance\"]",
         "detail": "src.nvidia.cuda",
         "documentation": {}
     },
@@ -586,7 +611,7 @@
         "kind": 2,
         "importPath": "src.nvidia.patches",
         "description": "src.nvidia.patches",
-        "peekOfCode": "def apply_nvidia_patches():\n    \"\"\"Apply NVIDIA patches for unlimited NVENC sessions\"\"\"\n    log_step(\"NVIDIA NVENC & NvFBC unlimited sessions patch...\")\n    if not prompt_yes_no(\"Would you like to patch NVIDIA drivers to remove NVENC session limit?\"):\n        return\n    _apply_nvenc_patch()\n    if prompt_yes_no(\"Would you also like to patch for NvFBC support (useful for OBS)?\"):\n        _apply_nvfbc_patch()\ndef _apply_nvenc_patch():\n    \"\"\"Apply NVENC session limit patch using our binary patcher.",
+        "peekOfCode": "def apply_nvidia_patches() -> None:\n    \"\"\"Apply NVIDIA patches for unlimited NVENC sessions\"\"\"\n    log_step(\"NVIDIA NVENC & NvFBC unlimited sessions patch...\")\n    if not prompt_yes_no(\"Would you like to patch NVIDIA drivers to remove NVENC session limit?\"):\n        return\n    _apply_nvenc_patch()\n    if prompt_yes_no(\"Would you also like to patch for NvFBC support (useful for OBS)?\"):\n        _apply_nvfbc_patch()\ndef _nvidia_smi_works() -> bool:\n    \"\"\"Check whether nvidia-smi can successfully query the driver.",
         "detail": "src.nvidia.patches",
         "documentation": {}
     },
@@ -595,7 +620,16 @@
         "kind": 5,
         "importPath": "src.nvidia.patches",
         "description": "src.nvidia.patches",
-        "peekOfCode": "SCRIPTS_DIR = os.path.join(\n    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),\n    'scripts'\n)\ndef apply_nvidia_patches():\n    \"\"\"Apply NVIDIA patches for unlimited NVENC sessions\"\"\"\n    log_step(\"NVIDIA NVENC & NvFBC unlimited sessions patch...\")\n    if not prompt_yes_no(\"Would you like to patch NVIDIA drivers to remove NVENC session limit?\"):\n        return\n    _apply_nvenc_patch()",
+        "peekOfCode": "SCRIPTS_DIR = os.path.join(\n    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),\n    'scripts'\n)\n# Regex that matches a valid NVIDIA driver version string (e.g. 580.126.09)\n_VERSION_PATTERN = re.compile(r'^[0-9]+\\.[0-9]+')\ndef apply_nvidia_patches() -> None:\n    \"\"\"Apply NVIDIA patches for unlimited NVENC sessions\"\"\"\n    log_step(\"NVIDIA NVENC & NvFBC unlimited sessions patch...\")\n    if not prompt_yes_no(\"Would you like to patch NVIDIA drivers to remove NVENC session limit?\"):",
+        "detail": "src.nvidia.patches",
+        "documentation": {}
+    },
+    {
+        "label": "_VERSION_PATTERN",
+        "kind": 5,
+        "importPath": "src.nvidia.patches",
+        "description": "src.nvidia.patches",
+        "peekOfCode": "_VERSION_PATTERN = re.compile(r'^[0-9]+\\.[0-9]+')\ndef apply_nvidia_patches() -> None:\n    \"\"\"Apply NVIDIA patches for unlimited NVENC sessions\"\"\"\n    log_step(\"NVIDIA NVENC & NvFBC unlimited sessions patch...\")\n    if not prompt_yes_no(\"Would you like to patch NVIDIA drivers to remove NVENC session limit?\"):\n        return\n    _apply_nvenc_patch()\n    if prompt_yes_no(\"Would you also like to patch for NvFBC support (useful for OBS)?\"):\n        _apply_nvfbc_patch()\ndef _nvidia_smi_works() -> bool:",
         "detail": "src.nvidia.patches",
         "documentation": {}
     },
@@ -748,7 +782,7 @@
         "kind": 6,
         "importPath": "src.utils.system",
         "description": "src.utils.system",
-        "peekOfCode": "class AptManager:\n    \"\"\"Manages apt operations with caching\"\"\"\n    def __init__(self):\n        self._update_cache = False\n    def update(self):\n        \"\"\"Update apt cache if not already done\"\"\"\n        if not self._update_cache:\n            run_command(\"apt-get update\")\n            self._update_cache = True\n    def install(self, *packages):",
+        "peekOfCode": "class AptManager:\n    \"\"\"Manages apt operations with caching\"\"\"\n    _update_done: bool = False\n    def update(self):\n        \"\"\"Update apt cache if not already done\"\"\"\n        if not AptManager._update_done:\n            run_command(\"apt-get update\")\n            AptManager._update_done = True\n    @classmethod\n    def reset_cache(cls):",
         "detail": "src.utils.system",
         "documentation": {}
     },

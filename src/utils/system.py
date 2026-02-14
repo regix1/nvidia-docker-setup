@@ -37,33 +37,48 @@ def run_command(cmd, shell=True, check=True, capture_output=False):
 
 class AptManager:
     """Manages apt operations with caching"""
-    
-    def __init__(self):
-        self._update_cache = False
-    
+
+    _update_done: bool = False
+
     def update(self):
         """Update apt cache if not already done"""
-        if not self._update_cache:
+        if not AptManager._update_done:
             run_command("apt-get update")
-            self._update_cache = True
-    
+            AptManager._update_done = True
+
+    @classmethod
+    def reset_cache(cls):
+        """Reset the update cache so the next update() call re-runs apt-get update.
+
+        Call this after adding new repositories so packages from
+        those repos can be discovered.
+        """
+        cls._update_done = False
+
     def install(self, *packages):
         """Install packages using apt"""
         self.update()
         package_list = ' '.join(packages)
         env = os.environ.copy()
         env['DEBIAN_FRONTEND'] = 'noninteractive'
-        
+
         cmd = f"apt-get install -y {package_list}"
+        log_info(f"Running: {cmd}")
         subprocess.run(cmd, shell=True, check=True, env=env)
-    
-    def remove(self, *packages, purge=False):
-        """Remove packages"""
+
+    def remove(self, *packages, purge: bool = False, check: bool = True):
+        """Remove packages
+
+        Args:
+            packages: Package names to remove
+            purge: Whether to purge configuration files
+            check: Whether to raise on failure (default True)
+        """
         package_list = ' '.join(packages)
         flag = "--purge" if purge else ""
-        run_command(f"apt-get remove {flag} -y {package_list}")
-    
-    def autoremove(self, purge=False):
+        run_command(f"apt-get remove {flag} -y {package_list}", check=check)
+
+    def autoremove(self, purge: bool = False):
         """Remove unnecessary packages"""
         flag = "--purge" if purge else ""
         run_command(f"apt-get autoremove {flag} -y")

@@ -88,6 +88,18 @@ def _load_cuda_versions():
 def get_cuda_compatibility_info(cuda_version):
     """Get compatibility information for CUDA version"""
     compatibility_info = {
+        "13.0.0": {
+            "min_driver": "570.86.15",
+            "features": ["Latest CUDA architecture", "RTX 50 series support", "Enhanced AI/ML performance"]
+        },
+        "12.8.0": {
+            "min_driver": "570.86.15",
+            "features": ["Recent CUDA features", "Broad GPU support", "Stable performance"]
+        },
+        "12.6.0": {
+            "min_driver": "560.28.03",
+            "features": ["Mature release", "Good compatibility", "Stable performance"]
+        },
         "12.4.0": {
             "min_driver": "550.54.15",
             "features": ["Latest CUDA features", "RTX 40 series optimizations", "Advanced AI/ML support"]

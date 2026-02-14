@@ -2,7 +2,7 @@
 """
 NVIDIA Docker Setup - Python Version
 Installs/updates NVIDIA drivers and Docker with NVIDIA support, optimized for Plex and FFmpeg
-Written for Ubuntu 22.04 (Jammy)
+Written for Ubuntu 22.04+ (supports 22.04 and 24.04)
 """
 
 import os

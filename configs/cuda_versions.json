@@ -1,4 +1,7 @@
 {
+  "13.0.0": "Latest - RTX 50 series and Ada Lovelace optimized",
+  "12.8.0": "Recent stable - Broad GPU support",
+  "12.6.0": "Stable release - Good compatibility",
   "12.4.0": "Latest stable release - RTX 40 series optimized",
   "12.3.2": "Previous stable - Wide compatibility", 
   "12.2.2": "LTS candidate - Enterprise ready",
