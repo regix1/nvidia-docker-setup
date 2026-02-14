@@ -116,39 +116,3 @@ def get_cuda_compatibility_info(cuda_version):
     })
 
 
-def validate_cuda_version(version):
-    """Validate CUDA version format"""
-    try:
-        parts = version.split('.')
-        if len(parts) >= 2:
-            major = int(parts[0])
-            minor = int(parts[1])
-            return major >= 10  # Minimum CUDA 10.x
-    except:
-        return False
-    
-    return False
-
-
-def show_cuda_info():
-    """Display information about CUDA versions"""
-    info = """
-CUDA Version Information:
-
-CUDA (Compute Unified Device Architecture) is NVIDIA's parallel computing platform.
-For Docker containers, you select which CUDA version the containers will use.
-
-Key Points:
-• The CUDA version determines available features in containers
-• Newer versions support latest GPU features and optimizations  
-• Older versions provide broader compatibility
-• The host NVIDIA driver must support the selected CUDA version
-
-Recommendations:
-• RTX 30/40 series: Use CUDA 12.x for best performance
-• GTX 10/16 series: CUDA 11.8 provides good compatibility
-• Production environments: Consider LTS versions (12.2.2)
-• Development: Latest stable (12.4.0) for newest features
-"""
-    
-    print(info)

@@ -139,38 +139,6 @@
         "documentation": {}
     },
     {
-        "label": "log_info",
-        "importPath": "utils.logging",
-        "description": "utils.logging",
-        "isExtraImport": true,
-        "detail": "utils.logging",
-        "documentation": {}
-    },
-    {
-        "label": "log_warn",
-        "importPath": "utils.logging",
-        "description": "utils.logging",
-        "isExtraImport": true,
-        "detail": "utils.logging",
-        "documentation": {}
-    },
-    {
-        "label": "log_error",
-        "importPath": "utils.logging",
-        "description": "utils.logging",
-        "isExtraImport": true,
-        "detail": "utils.logging",
-        "documentation": {}
-    },
-    {
-        "label": "log_step",
-        "importPath": "utils.logging",
-        "description": "utils.logging",
-        "isExtraImport": true,
-        "detail": "utils.logging",
-        "documentation": {}
-    },
-    {
         "label": "log_success",
         "importPath": "utils.logging",
         "description": "utils.logging",
@@ -284,14 +252,6 @@
     },
     {
         "label": "prompt_choice",
-        "importPath": "utils.prompts",
-        "description": "utils.prompts",
-        "isExtraImport": true,
-        "detail": "utils.prompts",
-        "documentation": {}
-    },
-    {
-        "label": "prompt_yes_no",
         "importPath": "utils.prompts",
         "description": "utils.prompts",
         "isExtraImport": true,
@@ -388,22 +348,6 @@
     },
     {
         "label": "run_command",
-        "importPath": "utils.system",
-        "description": "utils.system",
-        "isExtraImport": true,
-        "detail": "utils.system",
-        "documentation": {}
-    },
-    {
-        "label": "run_command",
-        "importPath": "utils.system",
-        "description": "utils.system",
-        "isExtraImport": true,
-        "detail": "utils.system",
-        "documentation": {}
-    },
-    {
-        "label": "AptManager",
         "importPath": "utils.system",
         "description": "utils.system",
         "isExtraImport": true,
@@ -560,30 +504,6 @@
         "documentation": {}
     },
     {
-        "label": "setup_vulkan",
-        "importPath": "nvidia.vulkan",
-        "description": "nvidia.vulkan",
-        "isExtraImport": true,
-        "detail": "nvidia.vulkan",
-        "documentation": {}
-    },
-    {
-        "label": "check_vulkan_status",
-        "importPath": "nvidia.vulkan",
-        "description": "nvidia.vulkan",
-        "isExtraImport": true,
-        "detail": "nvidia.vulkan",
-        "documentation": {}
-    },
-    {
-        "label": "show_vulkan_info",
-        "importPath": "nvidia.vulkan",
-        "description": "nvidia.vulkan",
-        "isExtraImport": true,
-        "detail": "nvidia.vulkan",
-        "documentation": {}
-    },
-    {
         "label": "setup_docker",
         "importPath": "docker.setup",
         "description": "docker.setup",
@@ -613,24 +533,6 @@
         "importPath": "src.docker.config",
         "description": "src.docker.config",
         "peekOfCode": "def configure_docker_for_media():\n    \"\"\"Configure Docker with optimized settings for NVIDIA media\"\"\"\n    log_step(\"Configuring Docker for media processing...\")\n    if not prompt_yes_no(\"Configure Docker with optimized settings for NVIDIA media?\"):\n        return\n    use_cgroupfs = prompt_yes_no(\n        \"Would you like to configure Docker to use cgroupfs driver? \"\n        \"(Fixes common 'CUDA_ERROR_NO_DEVICE' issues)\"\n    )\n    _create_docker_daemon_config(use_cgroupfs)",
-        "detail": "src.docker.config",
-        "documentation": {}
-    },
-    {
-        "label": "show_docker_info",
-        "kind": 2,
-        "importPath": "src.docker.config",
-        "description": "src.docker.config",
-        "peekOfCode": "def show_docker_info():\n    \"\"\"Display Docker configuration information\"\"\"\n    log_info(\"Docker Configuration Information:\")\n    try:\n        # Show Docker version\n        docker_version = run_command(\"docker --version\", capture_output=True)\n        log_info(f\"Docker Version: {docker_version}\")\n        # Show Docker info\n        docker_info = run_command(\"docker info\", capture_output=True)\n        # Extract relevant info",
-        "detail": "src.docker.config",
-        "documentation": {}
-    },
-    {
-        "label": "validate_nvidia_docker",
-        "kind": 2,
-        "importPath": "src.docker.config",
-        "description": "src.docker.config",
-        "peekOfCode": "def validate_nvidia_docker():\n    \"\"\"Validate NVIDIA Docker integration\"\"\"\n    log_info(\"Validating NVIDIA Docker integration...\")\n    try:\n        output = run_command(\n            \"docker run --rm --gpus all nvidia/cuda:11.0-base nvidia-smi\",\n            capture_output=True\n        )\n        if \"NVIDIA-SMI\" in output:\n            log_info(\"✓ NVIDIA Docker integration is working\")",
         "detail": "src.docker.config",
         "documentation": {}
     },
@@ -671,24 +573,6 @@
         "documentation": {}
     },
     {
-        "label": "validate_cuda_version",
-        "kind": 2,
-        "importPath": "src.nvidia.cuda",
-        "description": "src.nvidia.cuda",
-        "peekOfCode": "def validate_cuda_version(version):\n    \"\"\"Validate CUDA version format\"\"\"\n    try:\n        parts = version.split('.')\n        if len(parts) >= 2:\n            major = int(parts[0])\n            minor = int(parts[1])\n            return major >= 10  # Minimum CUDA 10.x\n    except:\n        return False",
-        "detail": "src.nvidia.cuda",
-        "documentation": {}
-    },
-    {
-        "label": "show_cuda_info",
-        "kind": 2,
-        "importPath": "src.nvidia.cuda",
-        "description": "src.nvidia.cuda",
-        "peekOfCode": "def show_cuda_info():\n    \"\"\"Display information about CUDA versions\"\"\"\n    info = \"\"\"\nCUDA Version Information:\nCUDA (Compute Unified Device Architecture) is NVIDIA's parallel computing platform.\nFor Docker containers, you select which CUDA version the containers will use.\nKey Points:\n• The CUDA version determines available features in containers\n• Newer versions support latest GPU features and optimizations  \n• Older versions provide broader compatibility",
-        "detail": "src.nvidia.cuda",
-        "documentation": {}
-    },
-    {
         "label": "select_nvidia_driver",
         "kind": 2,
         "importPath": "src.nvidia.drivers",
@@ -698,75 +582,21 @@
         "documentation": {}
     },
     {
-        "label": "show_driver_info",
-        "kind": 2,
-        "importPath": "src.nvidia.drivers",
-        "description": "src.nvidia.drivers",
-        "peekOfCode": "def show_driver_info():\n    \"\"\"Display comprehensive information about NVIDIA drivers\"\"\"\n    info = \"\"\"\n╔══════════════════════════════════════════════════════════════╗\n║                   NVIDIA Driver Information                 ║\n╚══════════════════════════════════════════════════════════════╝\nNVIDIA drivers provide the interface between your GPU hardware and\nthe operating system, enabling GPU acceleration for applications.\nKey Components:\n• Kernel driver: Low-level hardware interface",
-        "detail": "src.nvidia.drivers",
-        "documentation": {}
-    },
-    {
         "label": "apply_nvidia_patches",
         "kind": 2,
         "importPath": "src.nvidia.patches",
         "description": "src.nvidia.patches",
-        "peekOfCode": "def apply_nvidia_patches():\n    \"\"\"Apply NVIDIA patches for unlimited sessions\"\"\"\n    log_step(\"NVIDIA NVENC & NvFBC unlimited sessions patch...\")\n    if not prompt_yes_no(\"Would you like to patch NVIDIA drivers to remove NVENC session limit?\"):\n        return\n    with tempfile.TemporaryDirectory() as temp_dir:\n        original_dir = os.getcwd()\n        try:\n            os.chdir(temp_dir)\n            _download_nvidia_patcher()",
+        "peekOfCode": "def apply_nvidia_patches():\n    \"\"\"Apply NVIDIA patches for unlimited NVENC sessions\"\"\"\n    log_step(\"NVIDIA NVENC & NvFBC unlimited sessions patch...\")\n    if not prompt_yes_no(\"Would you like to patch NVIDIA drivers to remove NVENC session limit?\"):\n        return\n    _apply_nvenc_patch()\n    if prompt_yes_no(\"Would you also like to patch for NvFBC support (useful for OBS)?\"):\n        _apply_nvfbc_patch()\ndef _apply_nvenc_patch():\n    \"\"\"Apply NVENC session limit patch using our binary patcher.",
         "detail": "src.nvidia.patches",
         "documentation": {}
     },
     {
-        "label": "check_patch_status",
-        "kind": 2,
+        "label": "SCRIPTS_DIR",
+        "kind": 5,
         "importPath": "src.nvidia.patches",
         "description": "src.nvidia.patches",
-        "peekOfCode": "def check_patch_status():\n    \"\"\"Check if patches have been applied\"\"\"\n    log_info(\"Checking patch status...\")\n    try:\n        # Check if patched files exist (this is a simplified check)\n        nvidia_smi_output = run_command(\"nvidia-smi\", capture_output=True, check=False)\n        if nvidia_smi_output:\n            log_info(\"NVIDIA driver is functional\")\n            # Additional patch verification could be added here\n        else:",
+        "peekOfCode": "SCRIPTS_DIR = os.path.join(\n    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),\n    'scripts'\n)\ndef apply_nvidia_patches():\n    \"\"\"Apply NVIDIA patches for unlimited NVENC sessions\"\"\"\n    log_step(\"NVIDIA NVENC & NvFBC unlimited sessions patch...\")\n    if not prompt_yes_no(\"Would you like to patch NVIDIA drivers to remove NVENC session limit?\"):\n        return\n    _apply_nvenc_patch()",
         "detail": "src.nvidia.patches",
-        "documentation": {}
-    },
-    {
-        "label": "show_patch_info",
-        "kind": 2,
-        "importPath": "src.nvidia.patches",
-        "description": "src.nvidia.patches",
-        "peekOfCode": "def show_patch_info():\n    \"\"\"Display information about available patches\"\"\"\n    info = \"\"\"\nNVIDIA Patches Available:\n1. NVENC Session Limit Patch:\n   - Removes the 2-session limit for consumer GPUs\n   - Allows unlimited simultaneous encoding sessions\n   - Useful for multiple containers or applications\n2. NvFBC Patch:\n   - Enables NvFBC (NVIDIA Frame Buffer Capture)",
-        "detail": "src.nvidia.patches",
-        "documentation": {}
-    },
-    {
-        "label": "setup_vulkan",
-        "kind": 2,
-        "importPath": "src.nvidia.vulkan",
-        "description": "src.nvidia.vulkan",
-        "peekOfCode": "def setup_vulkan():\n    \"\"\"Complete Vulkan setup for NVIDIA\"\"\"\n    log_step(\"Setting up Vulkan support for NVIDIA...\")\n    _install_vulkan_packages()\n    _verify_vulkan_icd()\n    _configure_vulkan_environment()\n    _test_vulkan_installation()\ndef _install_vulkan_packages():\n    \"\"\"Install required Vulkan packages\"\"\"\n    log_info(\"Installing Vulkan packages...\")",
-        "detail": "src.nvidia.vulkan",
-        "documentation": {}
-    },
-    {
-        "label": "check_vulkan_status",
-        "kind": 2,
-        "importPath": "src.nvidia.vulkan",
-        "description": "src.nvidia.vulkan",
-        "peekOfCode": "def check_vulkan_status():\n    \"\"\"Check and display Vulkan status\"\"\"\n    log_step(\"Checking Vulkan Status\")\n    status = {\n        'vulkan_loader': False,\n        'nvidia_icd': False,\n        'nvidia_detected': False,\n        'working': False\n    }\n    # Check Vulkan loader",
-        "detail": "src.nvidia.vulkan",
-        "documentation": {}
-    },
-    {
-        "label": "configure_docker_vulkan",
-        "kind": 2,
-        "importPath": "src.nvidia.vulkan",
-        "description": "src.nvidia.vulkan",
-        "peekOfCode": "def configure_docker_vulkan():\n    \"\"\"Configure Docker for Vulkan support\"\"\"\n    log_step(\"Configuring Docker for Vulkan support...\")\n    # Generate CDI spec for GPU access\n    log_info(\"Generating NVIDIA CDI specification...\")\n    try:\n        run_command(\"nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml\")\n        log_info(\"CDI specification generated\")\n    except Exception as e:\n        log_warn(f\"Could not generate CDI spec: {e}\")",
-        "detail": "src.nvidia.vulkan",
-        "documentation": {}
-    },
-    {
-        "label": "show_vulkan_info",
-        "kind": 2,
-        "importPath": "src.nvidia.vulkan",
-        "description": "src.nvidia.vulkan",
-        "peekOfCode": "def show_vulkan_info():\n    \"\"\"Display comprehensive Vulkan information\"\"\"\n    info = \"\"\"\n                    NVIDIA Vulkan Information\nWhat is Vulkan?\n  Vulkan is a low-level graphics and compute API that provides high-efficiency,\n  cross-platform access to GPUs. For NVIDIA GPUs, it enables GPU-accelerated\n  applications like video upscaling (NCNN), gaming, and compute workloads.\nKey Components:\n  - Vulkan Loader (libvulkan.so): Routes Vulkan calls to the GPU driver",
-        "detail": "src.nvidia.vulkan",
         "documentation": {}
     },
     {
@@ -945,7 +775,7 @@
         "kind": 2,
         "importPath": "src.utils.system",
         "description": "src.utils.system",
-        "peekOfCode": "def check_internet():\n    \"\"\"Check internet connectivity\"\"\"\n    try:\n        run_command(\"ping -c 1 8.8.8.8\", capture_output=True)\n        return True\n    except:\n        return False\ndef get_os_info():\n    \"\"\"Get OS information from /etc/os-release\"\"\"\n    try:",
+        "peekOfCode": "def check_internet():\n    \"\"\"Check internet connectivity\"\"\"\n    try:\n        run_command(\"ping -c 1 8.8.8.8\", capture_output=True)\n        return True\n    except Exception:\n        return False\ndef get_os_info():\n    \"\"\"Get OS information from /etc/os-release\"\"\"\n    try:",
         "detail": "src.utils.system",
         "documentation": {}
     },
@@ -963,7 +793,7 @@
         "kind": 2,
         "importPath": "src.utils.system",
         "description": "src.utils.system",
-        "peekOfCode": "def check_nvidia_gpu():\n    \"\"\"Check if NVIDIA GPU is present\"\"\"\n    try:\n        output = run_command(\"lspci | grep -i nvidia\", capture_output=True, check=False)\n        return bool(output)\n    except:\n        return False",
+        "peekOfCode": "def check_nvidia_gpu():\n    \"\"\"Check if NVIDIA GPU is present\"\"\"\n    try:\n        output = run_command(\"lspci | grep -i nvidia\", capture_output=True, check=False)\n        return bool(output)\n    except Exception:\n        return False",
         "detail": "src.utils.system",
         "documentation": {}
     },
@@ -999,7 +829,7 @@
         "kind": 2,
         "importPath": "main",
         "description": "main",
-        "peekOfCode": "def run_complete_installation(installations):\n    \"\"\"Run complete installation process\"\"\"\n    log_step(\"Running Complete Installation\")\n    # Install/reinstall NVIDIA drivers if needed\n    if not installations['nvidia_driver']['installed'] or prompt_yes_no(\"Reinstall NVIDIA drivers?\"):\n        select_nvidia_driver()\n    # Select CUDA version\n    cuda_version = select_cuda_version()\n    # Setup Vulkan support\n    if not installations['vulkan']['installed'] or \"NVIDIA\" not in str(installations['vulkan'].get('version', '')):",
+        "peekOfCode": "def run_complete_installation(installations):\n    \"\"\"Run complete installation process\"\"\"\n    log_step(\"Running Complete Installation\")\n    # Install/reinstall NVIDIA drivers if needed\n    if not installations['nvidia_driver']['installed'] or prompt_yes_no(\"Reinstall NVIDIA drivers?\"):\n        select_nvidia_driver()\n    # Select CUDA version\n    cuda_version = select_cuda_version()\n    # Install/reconfigure Docker\n    if not installations['docker']['installed'] or prompt_yes_no(\"Reconfigure Docker?\"):",
         "detail": "main",
         "documentation": {}
     },

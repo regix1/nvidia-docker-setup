@@ -101,7 +101,7 @@ def cleanup_nvidia_repos():
             apt.remove("'^nvidia-.*'", purge=True)
             apt.autoremove(purge=True)
             run_command("update-initramfs -u")
-    except:
+    except Exception:
         pass  # nvidia-smi not available or failed
 
 
@@ -110,7 +110,7 @@ def check_internet():
     try:
         run_command("ping -c 1 8.8.8.8", capture_output=True)
         return True
-    except:
+    except Exception:
         return False
 
 
@@ -125,9 +125,9 @@ def get_os_info():
             if '=' in line:
                 key, value = line.strip().split('=', 1)
                 info[key] = value.strip('"')
-        
+
         return info
-    except:
+    except Exception:
         return {}
 
 
@@ -136,5 +136,5 @@ def check_nvidia_gpu():
     try:
         output = run_command("lspci | grep -i nvidia", capture_output=True, check=False)
         return bool(output)
-    except:
+    except Exception:
         return False
