@@ -232,8 +232,8 @@ def _check_nvidia_gpu_present():
 
 def _offer_cleanup_option():
     """Offer to clean up old drivers and NVIDIA repositories"""
-    # Always check for old driver packages first (no prompt needed - just detection)
     if prompt_yes_no("Would you like to clean up old NVIDIA driver versions and repositories?"):
+        # Remove old driver packages first (keeps newest), then stale repo files
         cleanup_old_nvidia_drivers()
         cleanup_nvidia_repos()
 

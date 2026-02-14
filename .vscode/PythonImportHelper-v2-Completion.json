@@ -826,7 +826,7 @@
         "kind": 2,
         "importPath": "src.utils.system",
         "description": "src.utils.system",
-        "peekOfCode": "def cleanup_nvidia_repos():\n    \"\"\"Clean up existing NVIDIA repository files and fix driver mismatches\"\"\"\n    log_info(\"Cleaning up NVIDIA repository files...\")\n    # Repository files to remove\n    repo_files = [\n        \"/etc/apt/sources.list.d/nvidia-docker.list\",\n        \"/etc/apt/sources.list.d/nvidia-container-toolkit.list\",\n        \"/etc/apt/sources.list.d/nvidia*.list\"\n    ]\n    # Keyring files to remove",
+        "peekOfCode": "def cleanup_nvidia_repos():\n    \"\"\"Clean up stale NVIDIA repository and keyring files.\n    Only removes repo/keyring files that may conflict with fresh setup.\n    Does NOT touch installed driver packages - use cleanup_old_nvidia_drivers() for that.\n    \"\"\"\n    log_info(\"Cleaning up NVIDIA repository files...\")\n    # Repository files to remove\n    repo_files = [\n        \"/etc/apt/sources.list.d/nvidia-docker.list\",\n        \"/etc/apt/sources.list.d/nvidia-container-toolkit.list\",",
         "detail": "src.utils.system",
         "documentation": {}
     },

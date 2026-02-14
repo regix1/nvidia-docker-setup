@@ -88,16 +88,20 @@ class AptManager:
 
 
 def cleanup_nvidia_repos():
-    """Clean up existing NVIDIA repository files and fix driver mismatches"""
+    """Clean up stale NVIDIA repository and keyring files.
+
+    Only removes repo/keyring files that may conflict with fresh setup.
+    Does NOT touch installed driver packages - use cleanup_old_nvidia_drivers() for that.
+    """
     log_info("Cleaning up NVIDIA repository files...")
-    
+
     # Repository files to remove
     repo_files = [
         "/etc/apt/sources.list.d/nvidia-docker.list",
         "/etc/apt/sources.list.d/nvidia-container-toolkit.list",
         "/etc/apt/sources.list.d/nvidia*.list"
     ]
-    
+
     # Keyring files to remove
     keyring_files = [
         "/etc/apt/keyrings/nvidia-docker.gpg",
@@ -105,22 +109,9 @@ def cleanup_nvidia_repos():
         "/usr/share/keyrings/nvidia-docker.gpg",
         "/usr/share/keyrings/nvidia-container-toolkit-keyring.gpg"
     ]
-    
-    # Remove files
+
     for pattern in repo_files + keyring_files:
         run_command(f"rm -f {pattern}", check=False)
-    
-    # Check for driver version mismatch
-    try:
-        nvidia_smi_output = run_command("nvidia-smi", capture_output=True, check=False)
-        if nvidia_smi_output and "Driver/library version mismatch" in nvidia_smi_output:
-            log_warn("Detected NVIDIA driver version mismatch. Cleaning up...")
-            apt = AptManager()
-            apt.remove("'^nvidia-.*'", purge=True)
-            apt.autoremove(purge=True)
-            run_command("update-initramfs -u")
-    except Exception:
-        pass  # nvidia-smi not available or failed
 
 
 def cleanup_old_nvidia_drivers() -> bool:

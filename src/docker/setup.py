@@ -151,14 +151,20 @@ def _setup_nvidia_container_toolkit():
     run_command("nvidia-ctk runtime configure --runtime=docker")
 
     # Generate CDI specification for GPU access (important for Vulkan)
-    log_info("Generating CDI specification for GPU access...")
-    try:
-        run_command("mkdir -p /etc/cdi")
-        run_command("nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml")
-        log_info("CDI specification generated at /etc/cdi/nvidia.yaml")
-    except Exception as e:
-        log_warn(f"Could not generate CDI spec: {e}")
-        log_info("This is normal if NVIDIA driver is not yet loaded")
+    # Skip if nvidia-smi reports a driver/library mismatch (needs reboot first)
+    smi_check = run_command("nvidia-smi", capture_output=True, check=False)
+    if smi_check and "mismatch" in smi_check.lower():
+        log_warn("Skipping CDI spec generation - driver/library version mismatch (reboot required)")
+        log_info("CDI spec will be generated automatically by nvidia-cdi-refresh.service after reboot")
+    else:
+        log_info("Generating CDI specification for GPU access...")
+        try:
+            run_command("mkdir -p /etc/cdi")
+            run_command("nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml")
+            log_info("CDI specification generated at /etc/cdi/nvidia.yaml")
+        except Exception as e:
+            log_warn(f"Could not generate CDI spec: {e}")
+            log_info("This is normal if NVIDIA driver is not yet loaded")
 
     # Restart Docker for changes to take effect
     log_info("Restarting Docker service to apply NVIDIA settings...")
@@ -193,6 +199,13 @@ def _test_docker_installation():
         # Test with hello-world
         run_command("docker run --rm hello-world", capture_output=True)
         log_info("Docker hello-world test passed")
+
+        # Check if NVIDIA driver is functional before GPU tests
+        smi_check = run_command("nvidia-smi", capture_output=True, check=False)
+        if smi_check and "mismatch" in smi_check.lower():
+            log_warn("Skipping NVIDIA Docker tests - driver/library mismatch (reboot required)")
+            log_info("Run GPU container tests after reboot")
+            return
 
         # Test NVIDIA integration if possible
         try:
