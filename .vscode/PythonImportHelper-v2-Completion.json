@@ -387,6 +387,14 @@
         "documentation": {}
     },
     {
+        "label": "cleanup_old_nvidia_drivers",
+        "importPath": "utils.system",
+        "description": "utils.system",
+        "isExtraImport": true,
+        "detail": "utils.system",
+        "documentation": {}
+    },
+    {
         "label": "check_internet",
         "importPath": "utils.system",
         "description": "utils.system",
@@ -819,6 +827,15 @@
         "importPath": "src.utils.system",
         "description": "src.utils.system",
         "peekOfCode": "def cleanup_nvidia_repos():\n    \"\"\"Clean up existing NVIDIA repository files and fix driver mismatches\"\"\"\n    log_info(\"Cleaning up NVIDIA repository files...\")\n    # Repository files to remove\n    repo_files = [\n        \"/etc/apt/sources.list.d/nvidia-docker.list\",\n        \"/etc/apt/sources.list.d/nvidia-container-toolkit.list\",\n        \"/etc/apt/sources.list.d/nvidia*.list\"\n    ]\n    # Keyring files to remove",
+        "detail": "src.utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "cleanup_old_nvidia_drivers",
+        "kind": 2,
+        "importPath": "src.utils.system",
+        "description": "src.utils.system",
+        "peekOfCode": "def cleanup_old_nvidia_drivers() -> bool:\n    \"\"\"Detect and remove old NVIDIA driver packages, keeping only the newest.\n    Queries dpkg for all installed nvidia-driver-XXX packages, identifies\n    the highest version, and offers to purge all others.  This removes\n    stale libraries (e.g. libnvidia-encode.so.565.*) that confuse version\n    detection after driver upgrades.\n    Returns:\n        True if packages were removed, False otherwise.\n    \"\"\"\n    try:",
         "detail": "src.utils.system",
         "documentation": {}
     },

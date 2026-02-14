@@ -169,15 +169,18 @@ def _detect_version_from_library() -> Optional[str]:
         "/lib",
     ]
 
+    all_versions: list[str] = []
     for search_dir in search_dirs:
         pattern = os.path.join(search_dir, "libnvidia-encode.so.*.*.*")
-        matches = glob.glob(pattern)
-        if matches:
-            # Extract version from first match
-            filename = os.path.basename(matches[0])
-            ver_match = re.search(r'\.so\.([0-9]+\.[0-9]+\.[0-9]+)', filename)
+        for path in glob.glob(pattern):
+            ver_match = re.search(r'\.so\.([0-9]+\.[0-9]+\.[0-9]+)', os.path.basename(path))
             if ver_match:
-                return ver_match.group(1)
+                all_versions.append(ver_match.group(1))
+
+    if all_versions:
+        # Sort by version tuple to pick the highest installed version
+        all_versions.sort(key=lambda v: tuple(int(x) for x in v.split('.')), reverse=True)
+        return all_versions[0]
 
     return None
 

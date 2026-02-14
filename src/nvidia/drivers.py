@@ -38,14 +38,18 @@ def _detect_driver_version_fallback() -> str | None:
     Tries: library filename, modinfo, dpkg (in order).
     Returns version string or None.
     """
-    # Method 1: Parse from libnvidia-encode.so filename
+    # Method 1: Parse from libnvidia-encode.so filename (pick highest version)
+    all_lib_versions: list[str] = []
     for search_dir in ["/usr/lib/x86_64-linux-gnu", "/usr/lib64", "/usr/lib"]:
         pattern = os.path.join(search_dir, "libnvidia-encode.so.*.*.*")
-        matches = glob.glob(pattern)
-        if matches:
-            ver_match = re.search(r'\.so\.([0-9]+\.[0-9]+\.[0-9]+)', os.path.basename(matches[0]))
+        for path in glob.glob(pattern):
+            ver_match = re.search(r'\.so\.([0-9]+\.[0-9]+\.[0-9]+)', os.path.basename(path))
             if ver_match:
-                return ver_match.group(1)
+                all_lib_versions.append(ver_match.group(1))
+    if all_lib_versions:
+        # Sort by version tuple to pick the highest installed version
+        all_lib_versions.sort(key=lambda v: tuple(int(x) for x in v.split('.')), reverse=True)
+        return all_lib_versions[0]
 
     # Method 2: modinfo nvidia
     try:

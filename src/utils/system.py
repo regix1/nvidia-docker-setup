@@ -1,5 +1,6 @@
 """System utilities for command execution and package management"""
 
+import re
 import subprocess
 import os
 from .logging import log_info, log_error, log_warn
@@ -22,11 +23,13 @@ def run_command(cmd, shell=True, check=True, capture_output=False):
     
     try:
         if capture_output:
-            result = subprocess.run(cmd, shell=shell, check=check, 
-                                  capture_output=True, text=True)
+            result = subprocess.run(cmd, shell=shell, check=check,
+                                  capture_output=True, text=True,
+                                  stdin=subprocess.DEVNULL)
             return result.stdout.strip()
         else:
-            result = subprocess.run(cmd, shell=shell, check=check)
+            result = subprocess.run(cmd, shell=shell, check=check,
+                                  stdin=subprocess.DEVNULL)
             return result
     except subprocess.CalledProcessError as e:
         log_error(f"Command failed: {cmd}")
@@ -118,6 +121,61 @@ def cleanup_nvidia_repos():
             run_command("update-initramfs -u")
     except Exception:
         pass  # nvidia-smi not available or failed
+
+
+def cleanup_old_nvidia_drivers() -> bool:
+    """Detect and remove old NVIDIA driver packages, keeping only the newest.
+
+    Queries dpkg for all installed nvidia-driver-XXX packages, identifies
+    the highest version, and offers to purge all others.  This removes
+    stale libraries (e.g. libnvidia-encode.so.565.*) that confuse version
+    detection after driver upgrades.
+
+    Returns:
+        True if packages were removed, False otherwise.
+    """
+    try:
+        result = subprocess.run(
+            "dpkg -l 'nvidia-driver-*' 2>/dev/null",
+            shell=True, capture_output=True, text=True,
+        )
+        if result.returncode != 0:
+            return False
+
+        # Parse installed nvidia-driver-XXX packages
+        installed: list[tuple[int, str]] = []  # (major, full_package_name)
+        for line in result.stdout.splitlines():
+            parts = line.split()
+            if len(parts) >= 2 and parts[0] == "ii":
+                match = re.match(r'^(nvidia-driver-(\d+))$', parts[1])
+                if match:
+                    installed.append((int(match.group(2)), match.group(1)))
+
+        if len(installed) <= 1:
+            return False
+
+        installed.sort(key=lambda entry: entry[0])
+        newest_major, newest_pkg = installed[-1]
+        old_packages = [pkg for _major, pkg in installed[:-1]]
+
+        log_warn(f"Multiple NVIDIA driver versions installed:")
+        for major, pkg in installed:
+            marker = " (newest)" if pkg == newest_pkg else " (old)"
+            log_info(f"  {pkg}{marker}")
+
+        log_info(f"Old driver packages leave stale libraries on disk that can cause issues.")
+        log_info(f"Keeping: {newest_pkg}")
+        log_info(f"Will remove: {', '.join(old_packages)}")
+
+        apt = AptManager()
+        apt.remove(*old_packages, purge=True, check=False)
+        apt.autoremove(purge=True)
+        log_info("✓ Old NVIDIA driver packages removed")
+        return True
+
+    except Exception as e:
+        log_warn(f"Could not check for old driver packages: {e}")
+        return False
 
 
 def check_internet():

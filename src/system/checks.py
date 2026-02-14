@@ -5,7 +5,7 @@ import os
 import re
 from utils.logging import log_info, log_warn, log_error, log_step
 from utils.prompts import prompt_yes_no, prompt_acknowledge
-from utils.system import run_command, AptManager, cleanup_nvidia_repos, check_internet, get_os_info, check_nvidia_gpu
+from utils.system import run_command, AptManager, cleanup_nvidia_repos, cleanup_old_nvidia_drivers, check_internet, get_os_info, check_nvidia_gpu
 
 
 def get_system_info():
@@ -231,8 +231,10 @@ def _check_nvidia_gpu_present():
 
 
 def _offer_cleanup_option():
-    """Offer to clean up existing NVIDIA repositories"""
-    if prompt_yes_no("Would you like to clean up existing NVIDIA repositories and fix any driver mismatches?"):
+    """Offer to clean up old drivers and NVIDIA repositories"""
+    # Always check for old driver packages first (no prompt needed - just detection)
+    if prompt_yes_no("Would you like to clean up old NVIDIA driver versions and repositories?"):
+        cleanup_old_nvidia_drivers()
         cleanup_nvidia_repos()
 
 

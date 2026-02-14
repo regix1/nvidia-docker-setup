@@ -88,8 +88,8 @@ get_driver_version() {
         print_warning "nvidia-smi failed or returned invalid output (driver/library version mismatch?)"
     fi
 
-    # Method 2: Parse from installed libnvidia-encode.so filename
-    ver=$(find /usr/lib* /lib* -maxdepth 1 -name "libnvidia-encode.so.*.*.*" 2>/dev/null | head -1 | grep -oP '\.so\.\K[0-9]+\.[0-9]+\.[0-9]+') || true
+    # Method 2: Parse from installed libnvidia-encode.so filename (pick highest version)
+    ver=$(find /usr/lib* /lib* -maxdepth 1 -name "libnvidia-encode.so.*.*.*" 2>/dev/null | grep -oP '\.so\.\K[0-9]+\.[0-9]+\.[0-9]+' | sort -t. -k1,1n -k2,2n -k3,3n | tail -1) || true
     if [[ -n "$ver" ]] && is_valid_version "$ver"; then
         print_verbose "Driver version detected via library filename: $ver"
         print_warning "Detected driver version from library filename (nvidia-smi unavailable)"
