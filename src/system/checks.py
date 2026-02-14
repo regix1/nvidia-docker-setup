@@ -56,7 +56,11 @@ def get_system_info():
         # Try to get more details from nvidia-smi if driver is loaded
         nvidia_smi_output = run_command("nvidia-smi --query-gpu=gpu_name,driver_version,compute_cap --format=csv,noheader",
                                        capture_output=True, check=False)
-        if nvidia_smi_output and "command not found" not in nvidia_smi_output.lower():
+        # Validate nvidia-smi output is real CSV data, not an error message
+        _error_indicators = ["command not found", "failed", "mismatch", "nvml"]
+        if (nvidia_smi_output
+                and not any(err in nvidia_smi_output.lower() for err in _error_indicators)
+                and ',' in nvidia_smi_output):
             parts = nvidia_smi_output.split(',')
             if len(parts) >= 1:
                 info['gpu']['name'] = parts[0].strip()
@@ -67,6 +71,9 @@ def get_system_info():
 
             # Determine capabilities based on compute capability
             _determine_gpu_capabilities(info)
+        elif nvidia_smi_output and "mismatch" in nvidia_smi_output.lower():
+            # Driver installed but needs reboot - use lspci model if available
+            info['gpu']['driver_note'] = "Driver/library mismatch - reboot required"
 
     except Exception as e:
         info['gpu']['error'] = str(e)
@@ -148,8 +155,14 @@ def display_system_info(info):
             print(f"  Compute Cap:      {info['gpu']['compute_capability']}")
         if info['gpu'].get('driver_version'):
             print(f"  Driver Version:   {info['gpu']['driver_version']}")
+        if info['gpu'].get('driver_note'):
+            print(f"  Driver Status:    {info['gpu']['driver_note']}")
     else:
-        print("\n  GPU:              Not detected or driver not loaded")
+        if info['gpu'].get('driver_note'):
+            print(f"\n  GPU:              Detected (via lspci)")
+            print(f"  Driver Status:    {info['gpu']['driver_note']}")
+        else:
+            print("\n  GPU:              Not detected or driver not loaded")
 
     # Capabilities
     caps = info['capabilities']

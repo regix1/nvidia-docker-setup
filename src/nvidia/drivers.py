@@ -1,92 +1,182 @@
 """NVIDIA driver management with enhanced version selection"""
 
+import glob
+import os
+import re
 import subprocess
 from utils.logging import log_info, log_warn, log_error, log_step
 from utils.prompts import prompt_yes_no, prompt_input, prompt_choice
 from utils.system import run_command, AptManager
 
+# Regex that matches a valid NVIDIA driver version string (e.g. 580.126.09 or 590)
+_VERSION_PATTERN = re.compile(r'^[0-9]+\.[0-9]+')
+_VERSION_MAJOR = re.compile(r'^[0-9]+$')
+
 
 def select_nvidia_driver():
     """Select and install NVIDIA driver"""
     log_step("Selecting NVIDIA driver version...")
-    
+
     # Check if drivers are already installed
     current_driver = _check_existing_driver()
     if current_driver:
         _handle_existing_driver(current_driver)
     else:
         _install_new_driver()
-    
+
     _post_install_checks()
 
 
-def _check_existing_driver():
-    """Check if NVIDIA drivers are already installed and return version"""
+def _is_valid_version(text: str) -> bool:
+    """Check if text looks like a valid NVIDIA driver version"""
+    return bool(_VERSION_PATTERN.match(text.strip()))
+
+
+def _detect_driver_version_fallback() -> str | None:
+    """Detect driver version when nvidia-smi is broken.
+
+    Tries: library filename, modinfo, dpkg (in order).
+    Returns version string or None.
+    """
+    # Method 1: Parse from libnvidia-encode.so filename
+    for search_dir in ["/usr/lib/x86_64-linux-gnu", "/usr/lib64", "/usr/lib"]:
+        pattern = os.path.join(search_dir, "libnvidia-encode.so.*.*.*")
+        matches = glob.glob(pattern)
+        if matches:
+            ver_match = re.search(r'\.so\.([0-9]+\.[0-9]+\.[0-9]+)', os.path.basename(matches[0]))
+            if ver_match:
+                return ver_match.group(1)
+
+    # Method 2: modinfo nvidia
     try:
-        nvidia_smi_output = run_command("nvidia-smi --query-gpu=driver_version --format=csv,noheader", capture_output=True, check=False)
-        if nvidia_smi_output:
-            current_version = nvidia_smi_output.strip()
-            log_info(f"Current NVIDIA driver version: {current_version}")
-            
-            # Also show nvidia-smi output for full info
-            full_output = run_command("nvidia-smi", capture_output=True, check=False)
-            if full_output:
-                print("\nCurrent NVIDIA installation:")
-                print(full_output)
-            
-            return current_version
-    except:
+        result = subprocess.run("modinfo nvidia", shell=True, capture_output=True, text=True)
+        if result.returncode == 0:
+            for line in result.stdout.splitlines():
+                if line.startswith("version:"):
+                    ver = line.split(None, 1)[1].strip() if len(line.split(None, 1)) > 1 else ""
+                    if ver and _VERSION_PATTERN.match(ver):
+                        return ver
+    except OSError:
         pass
-    
+
+    # Method 3: dpkg
+    try:
+        result = subprocess.run("dpkg -l 'nvidia-driver-*'", shell=True, capture_output=True, text=True)
+        if result.returncode == 0:
+            for line in result.stdout.splitlines():
+                parts = line.split()
+                if len(parts) >= 3 and parts[0] == "ii" and re.match(r'^nvidia-driver-[0-9]+$', parts[1]):
+                    ver_match = re.match(r'^[0-9]+\.[0-9]+\.[0-9]+', parts[2])
+                    if ver_match:
+                        return ver_match.group(0)
+    except OSError:
+        pass
+
     return None
 
 
-def _handle_existing_driver(current_version):
+def _check_existing_driver() -> str | None:
+    """Check if NVIDIA drivers are already installed and return version.
+
+    Validates nvidia-smi output is a real version string.
+    Falls back to library/modinfo/dpkg detection on mismatch.
+    """
+    version = None
+    needs_reboot = False
+
+    # Try nvidia-smi first
+    try:
+        nvidia_smi_output = run_command(
+            "nvidia-smi --query-gpu=driver_version --format=csv,noheader",
+            capture_output=True, check=False
+        )
+        if nvidia_smi_output and _is_valid_version(nvidia_smi_output):
+            version = nvidia_smi_output.strip()
+        elif nvidia_smi_output and "mismatch" in nvidia_smi_output.lower():
+            needs_reboot = True
+    except Exception:
+        pass
+
+    # Fallback detection if nvidia-smi failed
+    if version is None:
+        version = _detect_driver_version_fallback()
+        if version is not None and not needs_reboot:
+            # Driver is installed but nvidia-smi didn't work
+            needs_reboot = True
+
+    if version is None:
+        return None
+
+    log_info(f"Current NVIDIA driver version: {version}")
+    if needs_reboot:
+        log_warn("Driver/library version mismatch - a reboot is required to use the new driver")
+        log_warn("nvidia-smi will not work until you reboot")
+
+    # Show nvidia-smi output only if it works
+    if not needs_reboot:
+        full_output = run_command("nvidia-smi", capture_output=True, check=False)
+        if full_output and "NVIDIA-SMI" in full_output:
+            print("\nCurrent NVIDIA installation:")
+            print(full_output)
+
+    return version
+
+
+def _major_version(version: str) -> str:
+    """Extract major version number from a full version string.
+
+    '590.48.01' -> '590', '590' -> '590'
+    """
+    return version.split('.')[0]
+
+
+def _handle_existing_driver(current_version: str) -> None:
     """Handle existing driver installation with options"""
+    current_major = _major_version(current_version)
     log_info(f"NVIDIA driver {current_version} is already installed.")
-    
-    # Get recommended and available versions
+
+    # Get recommended and available versions (these are major-only like '590')
     recommended_version = _get_recommended_driver()
     latest_available = _get_latest_available_driver()
-    
+
     print("\nDriver Management Options:")
     options = [
         f"Keep current driver ({current_version})",
-        f"Reinstall current driver ({current_version})",
+        f"Reinstall current driver ({current_major})",
     ]
-    
+
     # Add update option if newer version available
-    if recommended_version and recommended_version != current_version:
+    if recommended_version and recommended_version != current_major:
         options.append(f"Update to recommended version ({recommended_version})")
-    
-    if latest_available and latest_available != current_version and latest_available != recommended_version:
+
+    if latest_available and latest_available != current_major and latest_available != recommended_version:
         options.append(f"Update to latest available ({latest_available})")
-    
+
     options.extend([
         "Choose specific version",
         "Show available versions & compatibility info"
     ])
-    
+
     for i, option in enumerate(options, 1):
         print(f"  {i}. {option}")
-    
+
     choice_idx = prompt_choice(
         "Select option",
         [f"Option {i}" for i in range(1, len(options) + 1)],
         default=0
     )
-    
+
     if choice_idx == 0:  # Keep current
         log_info("Keeping current driver installation")
         return
     elif choice_idx == 1:  # Reinstall current
-        log_info(f"Reinstalling driver version {current_version}")
-        _install_specific_driver(current_version)
-    elif choice_idx == 2 and recommended_version != current_version:  # Update to recommended
+        log_info(f"Reinstalling driver version {current_major}")
+        _install_specific_driver(current_major)
+    elif choice_idx == 2 and recommended_version != current_major:  # Update to recommended
         log_info(f"Updating to recommended version {recommended_version}")
         if _confirm_driver_change(current_version, recommended_version):
             _install_specific_driver(recommended_version)
-    elif choice_idx == 3 and latest_available != current_version:  # Update to latest
+    elif choice_idx == 3 and latest_available != current_major:  # Update to latest
         log_info(f"Updating to latest version {latest_available}")
         if _confirm_driver_change(current_version, latest_available):
             _install_specific_driver(latest_available)
@@ -344,9 +434,14 @@ def _install_manual_driver(current_version=None):
     _install_specific_driver(driver_version)
 
 
-def _install_specific_driver(version):
-    """Install specific driver version"""
-    package_name = f"nvidia-driver-{version}"
+def _install_specific_driver(version: str) -> None:
+    """Install specific driver version.
+
+    version can be a full version like '590.48.01' or a major like '590'.
+    The apt package name always uses just the major number.
+    """
+    major = _major_version(version)
+    package_name = f"nvidia-driver-{major}"
     log_info(f"Installing NVIDIA driver version {version}...")
 
     try:
@@ -355,12 +450,12 @@ def _install_specific_driver(version):
         log_info(f"Successfully installed {package_name}")
 
         # Also install libnvidia-gl for Vulkan support
-        gl_package = f"libnvidia-gl-{version}"
+        gl_package = f"libnvidia-gl-{major}"
         log_info(f"Installing Vulkan/OpenGL support: {gl_package}")
         try:
             apt.install(gl_package)
             log_info(f"Successfully installed {gl_package}")
-        except:
+        except Exception:
             log_warn(f"Could not install {gl_package} - Vulkan may not work properly")
 
     except subprocess.CalledProcessError:
@@ -368,8 +463,8 @@ def _install_specific_driver(version):
 
         # Try alternative package names
         alternatives = [
-            f"nvidia-driver-{version}-server",
-            f"nvidia-{version}",
+            f"nvidia-driver-{major}-server",
+            f"nvidia-{major}",
         ]
 
         for alt_package in alternatives:

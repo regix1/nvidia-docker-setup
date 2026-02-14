@@ -411,15 +411,6 @@
         "documentation": {}
     },
     {
-        "label": "subprocess",
-        "kind": 6,
-        "isExtraImport": true,
-        "importPath": "subprocess",
-        "description": "subprocess",
-        "detail": "subprocess",
-        "documentation": {}
-    },
-    {
         "label": "glob",
         "kind": 6,
         "isExtraImport": true,
@@ -435,6 +426,15 @@
         "importPath": "re",
         "description": "re",
         "detail": "re",
+        "documentation": {}
+    },
+    {
+        "label": "subprocess",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "subprocess",
+        "description": "subprocess",
+        "detail": "subprocess",
         "documentation": {}
     },
     {
@@ -603,6 +603,24 @@
         "importPath": "src.nvidia.drivers",
         "description": "src.nvidia.drivers",
         "peekOfCode": "def select_nvidia_driver():\n    \"\"\"Select and install NVIDIA driver\"\"\"\n    log_step(\"Selecting NVIDIA driver version...\")\n    # Check if drivers are already installed\n    current_driver = _check_existing_driver()\n    if current_driver:\n        _handle_existing_driver(current_driver)\n    else:\n        _install_new_driver()\n    _post_install_checks()",
+        "detail": "src.nvidia.drivers",
+        "documentation": {}
+    },
+    {
+        "label": "_VERSION_PATTERN",
+        "kind": 5,
+        "importPath": "src.nvidia.drivers",
+        "description": "src.nvidia.drivers",
+        "peekOfCode": "_VERSION_PATTERN = re.compile(r'^[0-9]+\\.[0-9]+')\n_VERSION_MAJOR = re.compile(r'^[0-9]+$')\ndef select_nvidia_driver():\n    \"\"\"Select and install NVIDIA driver\"\"\"\n    log_step(\"Selecting NVIDIA driver version...\")\n    # Check if drivers are already installed\n    current_driver = _check_existing_driver()\n    if current_driver:\n        _handle_existing_driver(current_driver)\n    else:",
+        "detail": "src.nvidia.drivers",
+        "documentation": {}
+    },
+    {
+        "label": "_VERSION_MAJOR",
+        "kind": 5,
+        "importPath": "src.nvidia.drivers",
+        "description": "src.nvidia.drivers",
+        "peekOfCode": "_VERSION_MAJOR = re.compile(r'^[0-9]+$')\ndef select_nvidia_driver():\n    \"\"\"Select and install NVIDIA driver\"\"\"\n    log_step(\"Selecting NVIDIA driver version...\")\n    # Check if drivers are already installed\n    current_driver = _check_existing_driver()\n    if current_driver:\n        _handle_existing_driver(current_driver)\n    else:\n        _install_new_driver()",
         "detail": "src.nvidia.drivers",
         "documentation": {}
     },
