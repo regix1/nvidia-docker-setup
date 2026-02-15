@@ -1,7 +1,7 @@
 """NVIDIA driver patches for NVENC and NvFBC
 
 Uses pure-Python binary patching for NVENC session limit removal.
-Does NOT use sed-based patching (keylase/nvidia-patch approach) which
+Does NOT use sed-based patching (regix1/nvidia-patch approach) which
 corrupts ELF SONAME metadata and breaks nvidia-container-cli library
 discovery and ldconfig symlink creation.
 """
@@ -803,7 +803,7 @@ def _apply_nvenc_patch(
     if not patch_result.success:
         log_error(f"Patch failed: {patch_result.message}")
         log_warn("This driver version may not be supported by the binary patcher")
-        log_warn("Do NOT use sed-based patching tools (keylase/nvidia-patch) as they")
+        log_warn("Do NOT use sed-based patching tools (regix1/nvidia-patch) as they")
         log_warn("corrupt ELF SONAME metadata and break container library mounting")
         return
 
@@ -851,7 +851,7 @@ def _apply_nvenc_patch(
 def _apply_nvfbc_patch() -> None:
     """Apply NvFBC patch for OBS / screen-capture support.
 
-    Uses the upstream keylase/nvidia-patch script for NvFBC since we
+    Uses the upstream regix1/nvidia-patch script for NvFBC since we
     don't have a pure-Python patcher for it yet.
 
     WARNING: The upstream script uses sed-based binary patching which
@@ -859,14 +859,14 @@ def _apply_nvfbc_patch() -> None:
     is less critical for container workflows than libnvidia-encode.so,
     but users should verify library integrity after patching.
     """
-    log_warn("NvFBC patching uses upstream keylase/nvidia-patch (sed-based)")
+    log_warn("NvFBC patching uses upstream regix1/nvidia-patch (sed-based)")
     log_warn("This approach can corrupt ELF metadata -- verify library integrity afterward")
 
     _apply_upstream_nvfbc_script()
 
 
 def _apply_upstream_nvfbc_script() -> None:
-    """Clone keylase/nvidia-patch and run patch-fbc.sh.
+    """Clone regix1/nvidia-patch and run patch-fbc.sh.
 
     The upstream keylase scripts use nvidia-smi internally and do not
     accept a version override flag.  If nvidia-smi is broken (version
@@ -886,13 +886,13 @@ def _apply_upstream_nvfbc_script() -> None:
             log_warn("Please ensure NVIDIA drivers are properly installed and reboot if needed")
         return
 
-    log_info("Applying NvFBC patch via upstream keylase/nvidia-patch...")
+    log_info("Applying NvFBC patch via upstream regix1/nvidia-patch...")
 
     with tempfile.TemporaryDirectory() as tmp:
         original_dir = os.getcwd()
         try:
             os.chdir(tmp)
-            run_command("git clone https://github.com/keylase/nvidia-patch.git .")
+            run_command("git clone https://github.com/regix1/nvidia-patch.git .")
             run_command("chmod +x patch-fbc.sh")
             run_command("bash ./patch-fbc.sh")
             log_success("NvFBC patch applied!")
