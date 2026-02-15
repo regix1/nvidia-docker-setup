@@ -145,7 +145,7 @@ def cleanup_old_nvidia_drivers() -> bool:
         packages_by_major: dict[int, list[str]] = {}
         for line in result.stdout.splitlines():
             parts = line.split()
-            if len(parts) >= 2 and parts[0] == "ii":
+            if len(parts) >= 2 and parts[0] in ("ii", "hi"):
                 match = versioned_re.match(parts[1])
                 if match:
                     pkg_name = match.group(1)
@@ -218,7 +218,7 @@ def _get_installed_nvidia_packages() -> list[tuple[str, str]]:
         packages: list[tuple[str, str]] = []
         for line in result.stdout.splitlines():
             parts = line.split()
-            if len(parts) >= 3 and parts[0] == "ii":
+            if len(parts) >= 3 and parts[0] in ("ii", "hi"):
                 packages.append((parts[1], parts[2]))
         return packages
     except OSError:
@@ -273,15 +273,15 @@ def audit_nvidia_packages(current_major: str | None = None) -> dict[str, list[tu
             log_success(f"  [CURRENT] {pkg_name} ({pkg_version})")
             continue
 
-        # Check if the package contains any other major version number
-        # indicating it's from an old driver release
+        # Check if the package NAME contains a driver major version number
+        # Only packages with a version suffix in the name (e.g. nvidia-driver-565,
+        # libnvidia-encode-580) are driver-versioned.  Packages like nvidia-settings,
+        # nvidia-prime, nvtop are standalone utilities whose package version (e.g.
+        # 510.47.03) does NOT indicate a driver version.
         pkg_major_match = re.search(r'-(\d{3,})', pkg_name)
-        version_major_match = re.match(r'(\d{3,})\.', pkg_version)
         detected_major: str | None = None
         if pkg_major_match:
             detected_major = pkg_major_match.group(1)
-        elif version_major_match:
-            detected_major = version_major_match.group(1)
 
         if detected_major and detected_major != current_major:
             categorized["old"].append((pkg_name, pkg_version))
@@ -845,7 +845,8 @@ def pin_nvidia_driver_version(major_version: str, dry_run: bool = False) -> bool
         if result.returncode == 0:
             for line in result.stdout.splitlines():
                 parts = line.split()
-                if len(parts) >= 2 and parts[0] == "ii":
+                # ii = installed, hi = hold-installed (already pinned)
+                if len(parts) >= 2 and parts[0] in ("ii", "hi"):
                     packages_to_hold.append(parts[1])
 
         if not packages_to_hold:
