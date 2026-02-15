@@ -717,20 +717,11 @@
         "documentation": {}
     },
     {
-        "label": "_UPSTREAM_PATCH_COMMIT",
-        "kind": 5,
-        "importPath": "src.nvidia.patches",
-        "description": "src.nvidia.patches",
-        "peekOfCode": "_UPSTREAM_PATCH_COMMIT = \"2b16ade220d4\"\n# Regex that matches a valid NVIDIA driver version string (e.g. 580.126.09)\n_VERSION_PATTERN = re.compile(r'^[0-9]+\\.[0-9]+')\n# Backup directory for original libnvidia-encode.so files\n_BACKUP_DIR = \"/opt/nvidia/libnvidia-encode-backup\"\n# Standard library search paths (ordered by preference)\n_LIBRARY_SEARCH_PATHS: list[str] = [\n    \"/usr/lib/x86_64-linux-gnu\",\n    \"/usr/lib64\",\n    \"/usr/lib\",",
-        "detail": "src.nvidia.patches",
-        "documentation": {}
-    },
-    {
         "label": "_VERSION_PATTERN",
         "kind": 5,
         "importPath": "src.nvidia.patches",
         "description": "src.nvidia.patches",
-        "peekOfCode": "_VERSION_PATTERN = re.compile(r'^[0-9]+\\.[0-9]+')\n# Backup directory for original libnvidia-encode.so files\n_BACKUP_DIR = \"/opt/nvidia/libnvidia-encode-backup\"\n# Standard library search paths (ordered by preference)\n_LIBRARY_SEARCH_PATHS: list[str] = [\n    \"/usr/lib/x86_64-linux-gnu\",\n    \"/usr/lib64\",\n    \"/usr/lib\",\n    \"/lib/x86_64-linux-gnu\",\n]",
+        "peekOfCode": "_VERSION_PATTERN = re.compile(r'^[0-9]+\\.[0-9]+')\n# GPU architectures that do NOT need the NVENC session limit patch\n# (NVIDIA removed the limit for Ada Lovelace and newer consumer GPUs)\n_NVENC_UNLIMITED_ARCHITECTURES: dict[str, float] = {\n    \"Ada Lovelace\": 8.9,   # RTX 40-series\n    \"Blackwell\": 10.0,     # RTX 50-series\n}\n# Backup directory for original libnvidia-encode.so files\n_BACKUP_DIR = \"/opt/nvidia/libnvidia-encode-backup\"\n# Standard library search paths (ordered by preference)",
         "detail": "src.nvidia.patches",
         "documentation": {}
     },

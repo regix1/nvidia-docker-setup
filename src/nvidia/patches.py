@@ -1,4 +1,10 @@
-"""NVIDIA driver patches for NVENC and NvFBC"""
+"""NVIDIA driver patches for NVENC and NvFBC
+
+Uses pure-Python binary patching for NVENC session limit removal.
+Does NOT use sed-based patching (keylase/nvidia-patch approach) which
+corrupts ELF SONAME metadata and breaks nvidia-container-cli library
+discovery and ldconfig symlink creation.
+"""
 
 import glob
 import os
@@ -14,11 +20,15 @@ from utils.prompts import prompt_yes_no
 from utils.system import run_command
 
 
-# Last known-good commit of keylase/nvidia-patch (before patch-fbc.sh syntax break)
-_UPSTREAM_PATCH_COMMIT = "2b16ade220d4"
-
 # Regex that matches a valid NVIDIA driver version string (e.g. 580.126.09)
 _VERSION_PATTERN = re.compile(r'^[0-9]+\.[0-9]+')
+
+# GPU architectures that do NOT need the NVENC session limit patch
+# (NVIDIA removed the limit for Ada Lovelace and newer consumer GPUs)
+_NVENC_UNLIMITED_ARCHITECTURES: dict[str, float] = {
+    "Ada Lovelace": 8.9,   # RTX 40-series
+    "Blackwell": 10.0,     # RTX 50-series
+}
 
 # Backup directory for original libnvidia-encode.so files
 _BACKUP_DIR = "/opt/nvidia/libnvidia-encode-backup"
@@ -239,6 +249,112 @@ def _detect_version_from_library() -> Optional[str]:
         return all_versions[0]
 
     return None
+
+
+# ── GPU architecture detection ─────────────────────────────────────
+
+def _detect_gpu_architecture() -> Optional[tuple[str, float]]:
+    """Detect the GPU architecture name and compute capability.
+
+    Uses nvidia-smi to query the compute capability of the first GPU.
+
+    Returns:
+        Tuple of (architecture_name, compute_capability) or None if detection fails.
+    """
+    try:
+        result = subprocess.run(
+            "nvidia-smi --query-gpu=compute_cap --format=csv,noheader",
+            shell=True,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            return None
+        cap_str = result.stdout.strip().split('\n')[0].strip()
+        if not cap_str:
+            return None
+        compute_cap = float(cap_str)
+
+        # Map compute capability to architecture name
+        arch_map: dict[str, tuple[float, float]] = {
+            "Tesla":        (1.0, 1.3),
+            "Fermi":        (2.0, 2.1),
+            "Kepler":       (3.0, 3.7),
+            "Maxwell":      (5.0, 5.3),
+            "Pascal":       (6.0, 6.2),
+            "Volta":        (7.0, 7.0),
+            "Turing":       (7.5, 7.5),
+            "Ampere":       (8.0, 8.6),
+            "Ada Lovelace": (8.9, 8.9),
+            "Blackwell":    (10.0, 10.9),
+        }
+        for arch_name, (low, high) in arch_map.items():
+            if low <= compute_cap <= high:
+                return (arch_name, compute_cap)
+
+        return ("Unknown", compute_cap)
+    except (OSError, ValueError):
+        return None
+
+
+def _gpu_needs_nvenc_patch() -> bool:
+    """Check whether the installed GPU actually needs the NVENC session limit patch.
+
+    RTX 40-series (Ada Lovelace, compute 8.9) and newer do NOT have NVENC session
+    limits on consumer GPUs. Patching provides no benefit and risks corrupting the
+    library.
+
+    Returns:
+        True if the GPU needs the patch, False if the GPU has unlimited sessions natively.
+    """
+    arch_info = _detect_gpu_architecture()
+    if arch_info is None:
+        # Can't detect, assume patch is needed (older GPU likely)
+        return True
+
+    arch_name, compute_cap = arch_info
+    for unlimited_arch, min_cap in _NVENC_UNLIMITED_ARCHITECTURES.items():
+        if compute_cap >= min_cap:
+            log_info(f"GPU architecture: {arch_name} (compute {compute_cap})")
+            log_info(f"NVIDIA removed NVENC session limits for {unlimited_arch} and newer GPUs")
+            log_info("No patch is needed -- your GPU supports unlimited NVENC sessions natively")
+            return False
+
+    return True
+
+
+# ── ELF SONAME verification ───────────────────────────────────────
+
+def _verify_elf_soname(lib_path: str) -> Optional[str]:
+    """Verify that the ELF SONAME field is intact in a shared library.
+
+    The SONAME is critical for ldconfig, nvidia-container-cli, and the
+    dynamic linker. If it's missing, the library becomes invisible to
+    the entire NVIDIA container toolkit chain.
+
+    Args:
+        lib_path: Absolute path to the .so file to check.
+
+    Returns:
+        The SONAME string if found, or None if missing/corrupted.
+    """
+    try:
+        result = subprocess.run(
+            ["readelf", "-d", lib_path],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            return None
+        for line in result.stdout.splitlines():
+            if "SONAME" in line:
+                # Extract the SONAME value: [libnvidia-encode.so.1]
+                match = re.search(r'\[(.*?)\]', line)
+                if match:
+                    return match.group(1)
+        return None
+    except OSError:
+        return None
 
 
 # ── Library locating ────────────────────────────────────────────────
@@ -599,6 +715,10 @@ def _apply_nvenc_patch(
     session-limit check in libnvidia-encode.so.  Automatically detects
     the byte-pattern variant for the installed driver version.
 
+    This patcher reads and writes raw bytes -- it does NOT use sed-based
+    patching (which corrupts ELF SONAME metadata and breaks container
+    library mounting via nvidia-container-cli).
+
     When nvidia-smi is broken (e.g. after driver upgrade without reboot),
     detects the version via fallback methods.
 
@@ -610,6 +730,11 @@ def _apply_nvenc_patch(
     """
     log_info("NVIDIA NVENC Session Limit Patch")
 
+    # ── Check if GPU even needs the patch ──────────────────────────
+    if not rollback and not _gpu_needs_nvenc_patch():
+        log_success("Your GPU supports unlimited NVENC sessions natively -- no patch needed")
+        return
+
     # ── Detect driver version ───────────────────────────────────────
     log_info("Detecting driver version...")
     driver_version = _detect_driver_version(manual_version=manual_version, verbose=verbose)
@@ -618,10 +743,6 @@ def _apply_nvenc_patch(
         log_error("Could not detect NVIDIA driver version via any method")
         log_error("Tried: nvidia-smi, library filename, modinfo, dpkg")
         log_warn("Please reboot and re-run, or pass version manually")
-
-        # Fall back to upstream keylase/nvidia-patch
-        log_info("Trying upstream keylase/nvidia-patch as fallback...")
-        _apply_upstream_script("patch.sh", "NVENC")
         return
 
     log_success(f"Driver version: {driver_version}")
@@ -632,15 +753,35 @@ def _apply_nvenc_patch(
 
     if lib_path is None:
         log_error(f"Could not find libnvidia-encode.so.{driver_version}")
-        log_warn("Trying upstream keylase/nvidia-patch as fallback...")
-        _apply_upstream_script("patch.sh", "NVENC")
+        log_warn("Ensure the driver is properly installed: apt reinstall libnvidia-encode-" +
+                 driver_version.split('.')[0])
         return
 
     log_success(f"Library: {lib_path}")
 
+    # ── Verify SONAME before touching anything ─────────────────────
+    soname_before = _verify_elf_soname(lib_path)
+    if soname_before:
+        if verbose:
+            log_info(f"ELF SONAME verified: {soname_before}")
+    else:
+        log_warn("ELF SONAME is already missing from this library!")
+        log_warn("This may indicate a previous sed-based patch corrupted the file")
+        log_warn(f"Consider: apt reinstall libnvidia-encode-{driver_version.split('.')[0]}")
+        if not rollback:
+            return
+
     # ── Rollback mode ───────────────────────────────────────────────
     if rollback:
         if _restore_backup(driver_version, lib_path, dry_run=dry_run):
+            # Verify SONAME is restored
+            if not dry_run:
+                soname_after = _verify_elf_soname(lib_path)
+                if soname_after:
+                    log_success(f"SONAME verified after rollback: {soname_after}")
+                else:
+                    log_warn("SONAME still missing after rollback -- backup may also be corrupted")
+                    log_warn(f"Reinstall the package: apt reinstall libnvidia-encode-{driver_version.split('.')[0]}")
             return
         log_error("Rollback failed")
         return
@@ -661,16 +802,45 @@ def _apply_nvenc_patch(
 
     if not patch_result.success:
         log_error(f"Patch failed: {patch_result.message}")
-        log_info("Trying upstream keylase/nvidia-patch as fallback...")
-        _apply_upstream_script("patch.sh", "NVENC")
+        log_warn("This driver version may not be supported by the binary patcher")
+        log_warn("Do NOT use sed-based patching tools (keylase/nvidia-patch) as they")
+        log_warn("corrupt ELF SONAME metadata and break container library mounting")
         return
 
     if dry_run:
         log_info(patch_result.message)
         return
 
+    # ── Verify SONAME integrity after patching ─────────────────────
+    soname_after = _verify_elf_soname(lib_path)
+    if soname_before and not soname_after:
+        log_error("CRITICAL: ELF SONAME was destroyed by patching!")
+        log_error("Restoring from backup...")
+        _restore_backup(driver_version, lib_path)
+        log_error("Patch rolled back due to SONAME corruption")
+        return
+
+    if soname_after:
+        log_success(f"ELF SONAME intact: {soname_after}")
+
     # Rebuild linker cache after successful patch
     run_command("ldconfig", check=False)
+
+    # Verify ldconfig sees the library
+    try:
+        result = subprocess.run(
+            "ldconfig -p | grep nvidia-encode",
+            shell=True,
+            capture_output=True,
+            text=True,
+        )
+        if "libnvidia-encode" in result.stdout:
+            log_success("ldconfig cache updated -- library is discoverable")
+        else:
+            log_warn("Library not found in ldconfig cache -- containers may not discover it")
+            log_warn("Run: ldconfig && ldconfig -p | grep nvidia-encode")
+    except OSError:
+        pass
 
     log_success("NVENC session limit removed!")
     log_info(f"Backup: {_BACKUP_DIR}/libnvidia-encode.so.{driver_version}.orig")
@@ -679,54 +849,59 @@ def _apply_nvenc_patch(
 
 
 def _apply_nvfbc_patch() -> None:
-    """Apply NvFBC patch for OBS / screen-capture support"""
-    _apply_upstream_script("patch-fbc.sh", "NvFBC")
+    """Apply NvFBC patch for OBS / screen-capture support.
+
+    Uses the upstream keylase/nvidia-patch script for NvFBC since we
+    don't have a pure-Python patcher for it yet.
+
+    WARNING: The upstream script uses sed-based binary patching which
+    can corrupt ELF SONAME metadata. The NvFBC library (libnvidia-fbc.so)
+    is less critical for container workflows than libnvidia-encode.so,
+    but users should verify library integrity after patching.
+    """
+    log_warn("NvFBC patching uses upstream keylase/nvidia-patch (sed-based)")
+    log_warn("This approach can corrupt ELF metadata -- verify library integrity afterward")
+
+    _apply_upstream_nvfbc_script()
 
 
-def _apply_upstream_script(script_name: str, label: str) -> None:
-    """Clone keylase/nvidia-patch and run the given script.
+def _apply_upstream_nvfbc_script() -> None:
+    """Clone keylase/nvidia-patch and run patch-fbc.sh.
 
     The upstream keylase scripts use nvidia-smi internally and do not
     accept a version override flag.  If nvidia-smi is broken (version
     mismatch after driver upgrade), we skip the upstream script and
     warn the user to reboot first.
     """
-    # Check if nvidia-smi is functional -- upstream scripts depend on it
     if not _nvidia_smi_works():
         reboot_needed = _needs_reboot()
         if reboot_needed:
             log_warn(
-                f"Skipping upstream {label} patch: nvidia-smi reports "
+                "Skipping upstream NvFBC patch: nvidia-smi reports "
                 "driver/library version mismatch"
-            )
-            log_warn(
-                "The upstream keylase/nvidia-patch script requires a working "
-                "nvidia-smi and does not accept a version override"
             )
             log_warn("Please reboot to load the new kernel module, then re-run this tool")
         else:
-            log_warn(
-                f"Skipping upstream {label} patch: nvidia-smi is not functional"
-            )
+            log_warn("Skipping upstream NvFBC patch: nvidia-smi is not functional")
             log_warn("Please ensure NVIDIA drivers are properly installed and reboot if needed")
         return
 
-    log_info(f"Applying {label} patch via upstream keylase/nvidia-patch...")
+    log_info("Applying NvFBC patch via upstream keylase/nvidia-patch...")
 
     with tempfile.TemporaryDirectory() as tmp:
         original_dir = os.getcwd()
         try:
             os.chdir(tmp)
             run_command("git clone https://github.com/keylase/nvidia-patch.git .")
-            run_command(f"git -c advice.detachedHead=false checkout {_UPSTREAM_PATCH_COMMIT}")
-            run_command(f"chmod +x {script_name}")
-            run_command(f"bash ./{script_name}")
-            log_success(f"{label} patch applied!")
+            run_command("chmod +x patch-fbc.sh")
+            run_command("bash ./patch-fbc.sh")
+            log_success("NvFBC patch applied!")
+            log_warn("Verify library integrity: readelf -d /usr/lib/x86_64-linux-gnu/libnvidia-fbc.so.* | grep SONAME")
         except subprocess.CalledProcessError as exc:
-            log_warn(f"{label} patching failed: {exc}")
+            log_warn(f"NvFBC patching failed: {exc}")
             log_warn("You can manually apply the patch later if needed")
         except OSError as exc:
-            log_warn(f"{label} patching failed: {exc}")
+            log_warn(f"NvFBC patching failed: {exc}")
             log_warn("You can manually apply the patch later if needed")
         finally:
             os.chdir(original_dir)
