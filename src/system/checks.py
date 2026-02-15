@@ -5,7 +5,7 @@ import os
 import re
 from utils.logging import log_info, log_warn, log_error, log_step
 from utils.prompts import prompt_yes_no, prompt_acknowledge
-from utils.system import run_command, AptManager, cleanup_nvidia_repos, cleanup_old_nvidia_drivers, check_internet, get_os_info, check_nvidia_gpu
+from utils.system import run_command, AptManager, cleanup_nvidia_repos, cleanup_old_nvidia_drivers, full_nvidia_cleanup, check_internet, get_os_info, check_nvidia_gpu
 
 
 def get_system_info():
@@ -231,11 +231,20 @@ def _check_nvidia_gpu_present():
 
 
 def _offer_cleanup_option():
-    """Offer to clean up old drivers and NVIDIA repositories"""
-    if prompt_yes_no("Would you like to clean up old NVIDIA driver versions and repositories?"):
-        # Remove old driver packages first (keeps newest), then stale repo files
-        cleanup_old_nvidia_drivers()
-        cleanup_nvidia_repos()
+    """Offer to clean up old drivers, stale libraries, and NVIDIA repositories"""
+    if prompt_yes_no("Would you like to scan for old NVIDIA driver versions and stale libraries?"):
+        # First do a dry-run to show what would be cleaned
+        log_info("Scanning for issues (dry-run)...")
+        has_issues = full_nvidia_cleanup(dry_run=True)
+
+        if has_issues:
+            if prompt_yes_no("Issues found. Apply fixes now?"):
+                full_nvidia_cleanup(dry_run=False)
+                cleanup_nvidia_repos()
+        else:
+            log_info("System is clean — no old drivers or stale libraries found")
+            # Still offer to clean repos
+            cleanup_nvidia_repos()
 
 
 def _check_ubuntu_version():

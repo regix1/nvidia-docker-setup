@@ -19,13 +19,7 @@ A modular Python tool for installing and configuring NVIDIA drivers with Docker 
 ```bash
 git clone https://github.com/regix1/nvidia-docker-setup.git
 cd nvidia-docker-setup
-
-# Run the installer
-chmod +x install.sh
-./install.sh        # works as root or regular user
-
-# Run the main setup
-sudo python3 main.py
+sudo bash setup.sh
 ```
 
 ## Interface
@@ -86,11 +80,9 @@ Available CUDA versions for containers:
 
 ```
 nvidia-docker-setup/
-├── main.py                 # Entry point
-├── install.sh              # Quick installer
+├── setup.sh                # Entry point (the only script you need)
+├── main.py                 # Python application
 ├── requirements.txt        # Python dependencies
-├── scripts/
-│   └── nvenc-patch.sh      # Binary-safe NVENC session limit patch
 ├── src/
 │   ├── utils/              # Logging, system utilities, prompts
 │   ├── nvidia/
@@ -118,19 +110,13 @@ Consumer GeForce GPUs have an artificial limit on concurrent NVENC encoding sess
 - Supports all modern NVIDIA driver versions
 - Creates a backup before patching with rollback support
 
-```bash
-# The patch is applied automatically through the menu, or manually:
-sudo bash scripts/nvenc-patch.sh          # Apply patch
-sudo bash scripts/nvenc-patch.sh -n       # Dry-run (no changes)
-sudo bash scripts/nvenc-patch.sh -r       # Rollback from backup
-sudo bash scripts/nvenc-patch.sh -v       # Verbose output
-```
+The patch is applied automatically through the interactive menu (option 4).
 
 ## Usage
 
 ### Basic Installation
 ```bash
-sudo python3 main.py
+sudo bash setup.sh
 ```
 
 ### Testing GPU Integration
@@ -171,18 +157,17 @@ Located at `templates/plex-nvidia.yml`:
 
 **NVENC "incompatible client key" after patching:**
 - This usually means the wrong bytes were patched (common with sed-based tools)
-- Rollback: `sudo bash scripts/nvenc-patch.sh -r`
-- Re-apply with the included patcher which uses anchor-based matching
+- Re-run the setup and use the NVENC patch option, which uses anchor-based matching
 
 **NVENC not working:**
-- Apply the NVENC patch from the menu or run `sudo bash scripts/nvenc-patch.sh`
+- Apply the NVENC patch from the menu (option 4)
 - Verify GPU model supports NVENC
 
 **Reset Docker NVIDIA configuration:**
 ```bash
 sudo rm /etc/docker/daemon.json
 sudo systemctl restart docker
-sudo python3 main.py  # Re-run configuration
+sudo bash setup.sh  # Re-run configuration
 ```
 
 **Check GPU status:**

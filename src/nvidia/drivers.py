@@ -6,7 +6,7 @@ import re
 import subprocess
 from utils.logging import log_info, log_warn, log_error, log_step
 from utils.prompts import prompt_yes_no, prompt_input, prompt_choice
-from utils.system import run_command, AptManager
+from utils.system import run_command, AptManager, cleanup_stale_nvidia_libraries, repair_nvidia_symlinks
 
 # Regex that matches a valid NVIDIA driver version string (e.g. 580.126.09 or 590)
 _VERSION_PATTERN = re.compile(r'^[0-9]+\.[0-9]+')
@@ -453,6 +453,9 @@ def _install_specific_driver(version: str) -> None:
         apt.install(package_name)
         log_info(f"Successfully installed {package_name}")
 
+        # Clean up stale libraries and fix symlinks from previous driver versions
+        _post_install_library_cleanup()
+
         # Also install libnvidia-gl for Vulkan support
         gl_package = f"libnvidia-gl-{major}"
         log_info(f"Installing Vulkan/OpenGL support: {gl_package}")
@@ -481,6 +484,47 @@ def _install_specific_driver(version: str) -> None:
                 continue
 
         raise Exception(f"Could not install driver version {version}")
+
+
+def _post_install_library_cleanup() -> None:
+    """Clean up stale NVIDIA libraries after driver installation.
+
+    After installing a new driver, old versioned .so files and broken symlinks
+    may remain from previous driver versions.  This removes them and ensures
+    all symlinks point to the newly installed driver.
+    """
+    try:
+        # Detect the version that was just installed
+        # Try nvidia-smi first, fall back to library filename scanning
+        version: str | None = None
+        try:
+            smi_output = run_command(
+                "nvidia-smi --query-gpu=driver_version --format=csv,noheader",
+                capture_output=True, check=False,
+            )
+            if smi_output and re.match(r'^\d+\.\d+', smi_output.strip()):
+                version = smi_output.strip()
+        except Exception:
+            pass
+
+        if version is None:
+            version = _detect_driver_version_fallback()
+
+        if version is None:
+            log_info("Could not detect installed driver version — skipping library cleanup")
+            return
+
+        log_info(f"Cleaning up old libraries for driver {version}...")
+        result = cleanup_stale_nvidia_libraries(version, dry_run=False)
+        broken = repair_nvidia_symlinks(version, dry_run=False)
+
+        total_cleaned = len(result.get("stale_files", [])) + len(result.get("stale_symlinks", []))
+        if total_cleaned or broken:
+            log_info(f"Cleaned {total_cleaned} stale file(s) and repaired {len(broken)} symlink(s)")
+
+    except Exception as exc:
+        log_warn(f"Library cleanup encountered an error: {exc}")
+        log_info("Driver installation was successful — library issues can be fixed manually")
 
 
 def _post_install_checks():

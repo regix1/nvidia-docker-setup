@@ -355,6 +355,22 @@
         "documentation": {}
     },
     {
+        "label": "cleanup_stale_nvidia_libraries",
+        "importPath": "utils.system",
+        "description": "utils.system",
+        "isExtraImport": true,
+        "detail": "utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "repair_nvidia_symlinks",
+        "importPath": "utils.system",
+        "description": "utils.system",
+        "isExtraImport": true,
+        "detail": "utils.system",
+        "documentation": {}
+    },
+    {
         "label": "run_command",
         "importPath": "utils.system",
         "description": "utils.system",
@@ -388,6 +404,14 @@
     },
     {
         "label": "cleanup_old_nvidia_drivers",
+        "importPath": "utils.system",
+        "description": "utils.system",
+        "isExtraImport": true,
+        "detail": "utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "full_nvidia_cleanup",
         "importPath": "utils.system",
         "description": "utils.system",
         "isExtraImport": true,
@@ -455,6 +479,22 @@
         "documentation": {}
     },
     {
+        "label": "dataclass",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
+        "label": "field",
+        "importPath": "dataclasses",
+        "description": "dataclasses",
+        "isExtraImport": true,
+        "detail": "dataclasses",
+        "documentation": {}
+    },
+    {
         "label": "Optional",
         "importPath": "typing",
         "description": "typing",
@@ -469,6 +509,14 @@
         "importPath": "sys",
         "description": "sys",
         "detail": "sys",
+        "documentation": {}
+    },
+    {
+        "label": "datetime",
+        "importPath": "datetime",
+        "description": "datetime",
+        "isExtraImport": true,
+        "detail": "datetime",
         "documentation": {}
     },
     {
@@ -633,6 +681,33 @@
         "documentation": {}
     },
     {
+        "label": "PatchVariant",
+        "kind": 6,
+        "importPath": "src.nvidia.patches",
+        "description": "src.nvidia.patches",
+        "peekOfCode": "class PatchVariant:\n    \"\"\"A single old -> new byte replacement at the patch site.\"\"\"\n    old_hex: str\n    new_hex: str\n    label: str\n@dataclass(frozen=True)\nclass AnchorPattern:\n    \"\"\"An anchor byte sequence and its associated patch variants.\"\"\"\n    anchor: str\n    skip: int",
+        "detail": "src.nvidia.patches",
+        "documentation": {}
+    },
+    {
+        "label": "AnchorPattern",
+        "kind": 6,
+        "importPath": "src.nvidia.patches",
+        "description": "src.nvidia.patches",
+        "peekOfCode": "class AnchorPattern:\n    \"\"\"An anchor byte sequence and its associated patch variants.\"\"\"\n    anchor: str\n    skip: int\n    patched_marker: str\n    variants: list[PatchVariant] = field(default_factory=list)\n_ANCHORS: list[AnchorPattern] = [\n    # Variant A: result stored in R14D (mov r14d,eax = 41 89 c6)\n    # Used by 580.x+ drivers\n    AnchorPattern(",
+        "detail": "src.nvidia.patches",
+        "documentation": {}
+    },
+    {
+        "label": "PatchResult",
+        "kind": 6,
+        "importPath": "src.nvidia.patches",
+        "description": "src.nvidia.patches",
+        "peekOfCode": "class PatchResult:\n    \"\"\"Result of a binary patch operation.\"\"\"\n    success: bool\n    already_patched: bool\n    variant_label: str\n    offset: int\n    message: str\n# ── Driver version detection ────────────────────────────────────────\ndef _detect_driver_version(manual_version: Optional[str] = None, verbose: bool = False) -> Optional[str]:\n    \"\"\"Detect the installed NVIDIA driver version using multiple fallback methods.",
+        "detail": "src.nvidia.patches",
+        "documentation": {}
+    },
+    {
         "label": "apply_nvidia_patches",
         "kind": 2,
         "importPath": "src.nvidia.patches",
@@ -642,20 +717,11 @@
         "documentation": {}
     },
     {
-        "label": "SCRIPTS_DIR",
-        "kind": 5,
-        "importPath": "src.nvidia.patches",
-        "description": "src.nvidia.patches",
-        "peekOfCode": "SCRIPTS_DIR = os.path.join(\n    os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))),\n    'scripts'\n)\n# Last known-good commit of keylase/nvidia-patch (before patch-fbc.sh syntax break)\n_UPSTREAM_PATCH_COMMIT = \"2b16ade220d4\"\n# Regex that matches a valid NVIDIA driver version string (e.g. 580.126.09)\n_VERSION_PATTERN = re.compile(r'^[0-9]+\\.[0-9]+')\ndef apply_nvidia_patches() -> None:\n    \"\"\"Apply NVIDIA patches for unlimited NVENC sessions\"\"\"",
-        "detail": "src.nvidia.patches",
-        "documentation": {}
-    },
-    {
         "label": "_UPSTREAM_PATCH_COMMIT",
         "kind": 5,
         "importPath": "src.nvidia.patches",
         "description": "src.nvidia.patches",
-        "peekOfCode": "_UPSTREAM_PATCH_COMMIT = \"2b16ade220d4\"\n# Regex that matches a valid NVIDIA driver version string (e.g. 580.126.09)\n_VERSION_PATTERN = re.compile(r'^[0-9]+\\.[0-9]+')\ndef apply_nvidia_patches() -> None:\n    \"\"\"Apply NVIDIA patches for unlimited NVENC sessions\"\"\"\n    log_step(\"NVIDIA NVENC & NvFBC unlimited sessions patch...\")\n    if not prompt_yes_no(\"Would you like to patch NVIDIA drivers to remove NVENC session limit?\"):\n        return\n    _apply_nvenc_patch()\n    if prompt_yes_no(\"Would you also like to patch for NvFBC support (useful for OBS)?\"):",
+        "peekOfCode": "_UPSTREAM_PATCH_COMMIT = \"2b16ade220d4\"\n# Regex that matches a valid NVIDIA driver version string (e.g. 580.126.09)\n_VERSION_PATTERN = re.compile(r'^[0-9]+\\.[0-9]+')\n# Backup directory for original libnvidia-encode.so files\n_BACKUP_DIR = \"/opt/nvidia/libnvidia-encode-backup\"\n# Standard library search paths (ordered by preference)\n_LIBRARY_SEARCH_PATHS: list[str] = [\n    \"/usr/lib/x86_64-linux-gnu\",\n    \"/usr/lib64\",\n    \"/usr/lib\",",
         "detail": "src.nvidia.patches",
         "documentation": {}
     },
@@ -664,7 +730,16 @@
         "kind": 5,
         "importPath": "src.nvidia.patches",
         "description": "src.nvidia.patches",
-        "peekOfCode": "_VERSION_PATTERN = re.compile(r'^[0-9]+\\.[0-9]+')\ndef apply_nvidia_patches() -> None:\n    \"\"\"Apply NVIDIA patches for unlimited NVENC sessions\"\"\"\n    log_step(\"NVIDIA NVENC & NvFBC unlimited sessions patch...\")\n    if not prompt_yes_no(\"Would you like to patch NVIDIA drivers to remove NVENC session limit?\"):\n        return\n    _apply_nvenc_patch()\n    if prompt_yes_no(\"Would you also like to patch for NvFBC support (useful for OBS)?\"):\n        _apply_nvfbc_patch()\ndef _nvidia_smi_works() -> bool:",
+        "peekOfCode": "_VERSION_PATTERN = re.compile(r'^[0-9]+\\.[0-9]+')\n# Backup directory for original libnvidia-encode.so files\n_BACKUP_DIR = \"/opt/nvidia/libnvidia-encode-backup\"\n# Standard library search paths (ordered by preference)\n_LIBRARY_SEARCH_PATHS: list[str] = [\n    \"/usr/lib/x86_64-linux-gnu\",\n    \"/usr/lib64\",\n    \"/usr/lib\",\n    \"/lib/x86_64-linux-gnu\",\n]",
+        "detail": "src.nvidia.patches",
+        "documentation": {}
+    },
+    {
+        "label": "_BACKUP_DIR",
+        "kind": 5,
+        "importPath": "src.nvidia.patches",
+        "description": "src.nvidia.patches",
+        "peekOfCode": "_BACKUP_DIR = \"/opt/nvidia/libnvidia-encode-backup\"\n# Standard library search paths (ordered by preference)\n_LIBRARY_SEARCH_PATHS: list[str] = [\n    \"/usr/lib/x86_64-linux-gnu\",\n    \"/usr/lib64\",\n    \"/usr/lib\",\n    \"/lib/x86_64-linux-gnu\",\n]\n# ── Binary patch anchor definitions ─────────────────────────────────\n#",
         "detail": "src.nvidia.patches",
         "documentation": {}
     },
@@ -844,7 +919,97 @@
         "kind": 2,
         "importPath": "src.utils.system",
         "description": "src.utils.system",
-        "peekOfCode": "def cleanup_old_nvidia_drivers() -> bool:\n    \"\"\"Detect and remove old NVIDIA driver packages, keeping only the newest.\n    Queries dpkg for all installed nvidia-driver-XXX packages, identifies\n    the highest version, and offers to purge all others.  This removes\n    stale libraries (e.g. libnvidia-encode.so.565.*) that confuse version\n    detection after driver upgrades.\n    Returns:\n        True if packages were removed, False otherwise.\n    \"\"\"\n    try:",
+        "peekOfCode": "def cleanup_old_nvidia_drivers() -> bool:\n    \"\"\"Detect and remove old NVIDIA driver packages, keeping only the newest.\n    Queries dpkg for all installed nvidia-driver-XXX packages (including\n    -server variants and associated library packages), identifies the highest\n    version, and offers to purge all others.\n    Returns:\n        True if packages were removed, False otherwise.\n    \"\"\"\n    try:\n        result = subprocess.run(",
+        "detail": "src.utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "get_running_driver_version",
+        "kind": 2,
+        "importPath": "src.utils.system",
+        "description": "src.utils.system",
+        "peekOfCode": "def get_running_driver_version() -> str | None:\n    \"\"\"Get the currently running NVIDIA driver version from nvidia-smi.\n    Returns:\n        Full version string (e.g. '590.48.01') or None if not available.\n    \"\"\"\n    try:\n        output = subprocess.run(\n            \"nvidia-smi --query-gpu=driver_version --format=csv,noheader\",\n            shell=True, capture_output=True, text=True,\n        )",
+        "detail": "src.utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "audit_nvidia_packages",
+        "kind": 2,
+        "importPath": "src.utils.system",
+        "description": "src.utils.system",
+        "peekOfCode": "def audit_nvidia_packages(current_major: str | None = None) -> dict[str, list[tuple[str, str]]]:\n    \"\"\"Audit all installed NVIDIA packages and categorize them.\n    Dynamically detects the current driver major version and categorizes all\n    installed NVIDIA packages as CURRENT, OLD, or OTHER.  No versions are\n    hardcoded -- the running driver is detected via nvidia-smi.\n    Args:\n        current_major: Override for the current driver major version.\n            If None, auto-detected from nvidia-smi.\n    Returns:\n        Dict with keys 'current', 'old', 'other', each mapping to a list",
+        "detail": "src.utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "audit_nvidia_repos",
+        "kind": 2,
+        "importPath": "src.utils.system",
+        "description": "src.utils.system",
+        "peekOfCode": "def audit_nvidia_repos() -> dict[str, list[str]]:\n    \"\"\"Audit NVIDIA-related APT repository sources.\n    Checks /etc/apt/sources.list and /etc/apt/sources.list.d/ for any\n    NVIDIA repository entries.  Also queries apt-cache policy for the\n    current driver package.\n    Returns:\n        Dict with keys:\n            'sources_list_entries': lines from sources.list mentioning nvidia\n            'sources_list_d_files': files in sources.list.d referencing nvidia\n    \"\"\"",
+        "detail": "src.utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "create_apt_pin_file",
+        "kind": 2,
+        "importPath": "src.utils.system",
+        "description": "src.utils.system",
+        "peekOfCode": "def create_apt_pin_file(major_version: str, dry_run: bool = True) -> bool:\n    \"\"\"Create an APT preferences pin file to prevent NVIDIA driver upgrades.\n    Creates /etc/apt/preferences.d/nvidia-pin with Pin-Priority 1001 so that\n    only the current major version can be installed, blocking accidental\n    upgrades to a newer major version.\n    Args:\n        major_version: The driver major version to pin (e.g. '590').\n        dry_run: If True, only report what would be created.\n    Returns:\n        True if the pin file was created (or would be in dry-run).",
+        "detail": "src.utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "manage_unattended_upgrades_blacklist",
+        "kind": 2,
+        "importPath": "src.utils.system",
+        "description": "src.utils.system",
+        "peekOfCode": "def manage_unattended_upgrades_blacklist(dry_run: bool = True) -> bool:\n    \"\"\"Add NVIDIA packages to the unattended-upgrades blacklist.\n    Checks /etc/apt/apt.conf.d/50unattended-upgrades for existing NVIDIA\n    entries and adds them if missing.  Creates a timestamped backup before\n    modifying the file.\n    Args:\n        dry_run: If True, only report what would be done.\n    Returns:\n        True if NVIDIA is already blacklisted or was successfully added.\n    \"\"\"",
+        "detail": "src.utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "verify_nvidia_cleanup_state",
+        "kind": 2,
+        "importPath": "src.utils.system",
+        "description": "src.utils.system",
+        "peekOfCode": "def verify_nvidia_cleanup_state(dry_run: bool = True) -> dict[str, bool]:\n    \"\"\"Verify the final state of NVIDIA driver cleanup and pinning.\n    Shows installed packages, held packages, APT pin file status,\n    and unattended-upgrades blacklist status.\n    Args:\n        dry_run: Whether we are in dry-run mode (affects messaging).\n    Returns:\n        Dict with verification results:\n            'packages_ok': True if only current driver packages are installed\n            'holds_ok': True if packages are held",
+        "detail": "src.utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "cleanup_stale_nvidia_libraries",
+        "kind": 2,
+        "importPath": "src.utils.system",
+        "description": "src.utils.system",
+        "peekOfCode": "def cleanup_stale_nvidia_libraries(current_version: str, dry_run: bool = True) -> dict[str, list[str]]:\n    \"\"\"Find and remove NVIDIA shared libraries from old driver versions.\n    After driver upgrades, old versioned .so files (e.g. libnvidia-encode.so.565.57.01)\n    may remain on disk.  These confuse the dynamic linker and the NVIDIA container\n    runtime, causing NVENC failures inside Docker containers.\n    Args:\n        current_version: The running driver version to keep (e.g. '590.48.01').\n        dry_run: If True (default), only report findings without modifying anything.\n    Returns:\n        Dict with keys 'stale_files' and 'stale_symlinks' listing what was found/removed.",
+        "detail": "src.utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "repair_nvidia_symlinks",
+        "kind": 2,
+        "importPath": "src.utils.system",
+        "description": "src.utils.system",
+        "peekOfCode": "def repair_nvidia_symlinks(current_version: str, dry_run: bool = True) -> list[str]:\n    \"\"\"Ensure all NVIDIA .so.1 symlinks point to the current driver version.\n    For each known NVIDIA library, verifies that:\n      libXXX.so.1 -> libXXX.so.CURRENT_VERSION\n      libXXX.so   -> libXXX.so.1\n    Args:\n        current_version: The running driver version (e.g. '590.48.01').\n        dry_run: If True (default), only report problems without fixing.\n    Returns:\n        List of symlinks that were broken (and fixed if not dry_run).",
+        "detail": "src.utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "pin_nvidia_driver_version",
+        "kind": 2,
+        "importPath": "src.utils.system",
+        "description": "src.utils.system",
+        "peekOfCode": "def pin_nvidia_driver_version(major_version: str, dry_run: bool = False) -> bool:\n    \"\"\"Pin the current NVIDIA driver packages to prevent unattended upgrades.\n    Performs three layers of protection:\n    1. apt-mark hold on all installed NVIDIA packages for this major version\n    2. Creates /etc/apt/preferences.d/nvidia-pin with Pin-Priority 1001\n    3. Adds NVIDIA to unattended-upgrades blacklist (if configured)\n    Args:\n        major_version: The driver major version to pin (e.g. '590').\n        dry_run: If True, only report what would be done without making changes.\n    Returns:",
+        "detail": "src.utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "full_nvidia_cleanup",
+        "kind": 2,
+        "importPath": "src.utils.system",
+        "description": "src.utils.system",
+        "peekOfCode": "def full_nvidia_cleanup(dry_run: bool = True) -> bool:\n    \"\"\"Run comprehensive NVIDIA driver cleanup.\n    Orchestrates all cleanup steps:\n    1. Audit installed NVIDIA packages (categorize current/old/other)\n    2. Audit NVIDIA APT repository sources\n    3. Remove old driver APT packages\n    4. Remove stale versioned library files\n    5. Repair broken symlinks\n    6. Pin the current driver version (apt-mark hold + pin file + unattended-upgrades)\n    7. Verify final state",
         "detail": "src.utils.system",
         "documentation": {}
     },
@@ -872,6 +1037,24 @@
         "importPath": "src.utils.system",
         "description": "src.utils.system",
         "peekOfCode": "def check_nvidia_gpu():\n    \"\"\"Check if NVIDIA GPU is present\"\"\"\n    try:\n        output = run_command(\"lspci | grep -i nvidia\", capture_output=True, check=False)\n        return bool(output)\n    except Exception:\n        return False",
+        "detail": "src.utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "_NVIDIA_LIB_DIRS",
+        "kind": 5,
+        "importPath": "src.utils.system",
+        "description": "src.utils.system",
+        "peekOfCode": "_NVIDIA_LIB_DIRS = [\n    \"/usr/lib/x86_64-linux-gnu\",\n    \"/usr/lib64\",\n    \"/usr/lib/i386-linux-gnu\",\n    \"/usr/lib\",\n    \"/lib/x86_64-linux-gnu\",\n    \"/lib\",\n]\n# NVIDIA library base names (without .so suffix) that may have versioned copies\n_NVIDIA_LIB_BASES = [",
+        "detail": "src.utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "_NVIDIA_LIB_BASES",
+        "kind": 5,
+        "importPath": "src.utils.system",
+        "description": "src.utils.system",
+        "peekOfCode": "_NVIDIA_LIB_BASES = [\n    \"libnvidia-encode\", \"libnvidia-decode\", \"libnvidia-fbc\",\n    \"libnvidia-ml\", \"libnvidia-opencl\", \"libnvidia-opticalflow\",\n    \"libnvidia-ptxjitcompiler\", \"libnvidia-allocator\", \"libnvidia-cfg\",\n    \"libnvidia-glcore\", \"libnvidia-glsi\", \"libnvidia-glvkspirv\",\n    \"libnvidia-gpucomp\", \"libnvidia-tls\", \"libnvidia-nvvm\",\n    \"libnvidia-ngx\", \"libnvidia-api\", \"libnvidia-vulkan-producer\",\n    \"libcuda\", \"libcudadebugger\", \"libnvcuvid\",\n]\ndef cleanup_stale_nvidia_libraries(current_version: str, dry_run: bool = True) -> dict[str, list[str]]:",
         "detail": "src.utils.system",
         "documentation": {}
     },
