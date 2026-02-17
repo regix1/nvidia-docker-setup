@@ -7,7 +7,7 @@ import os
 import sys
 import traceback
 
-from nvidia_driver_setup.utils.logging import log_error, log_step, log_info, log_success
+from nvidia_driver_setup.utils.logging import log_error, log_step, log_info, log_success, log_warn
 from nvidia_driver_setup.utils.prompts import prompt_yes_no, prompt_multi_select
 from nvidia_driver_setup.system.checks import (
     run_preliminary_checks,
@@ -43,6 +43,47 @@ def show_banner() -> None:
 \u255a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u255d
 """
     print(banner)
+
+
+def _check_nvenc_patch_status() -> str:
+    """Check if NVENC patch is already applied.
+
+    Returns:
+        Status string: '[Patched]', '[Unpatched]', or ''
+    """
+    try:
+        from nvidia_driver_setup.nvidia.patches import _patch_binary, _LIBRARY_SEARCH_PATHS
+        import glob
+
+        for search_path in _LIBRARY_SEARCH_PATHS:
+            pattern = os.path.join(search_path, "libnvidia-encode.so.???.*")
+            libs = glob.glob(pattern)
+            if libs:
+                result = _patch_binary(libs[0], dry_run=True, verbose=False)
+                if result.already_patched:
+                    return "[Patched]"
+                return "[Unpatched]"
+    except Exception:
+        pass
+    return ""
+
+
+def _check_media_config_status() -> str:
+    """Check if Docker is configured for media servers.
+
+    Returns:
+        Status string: '[OK]' or '[--]'
+    """
+    try:
+        daemon_config = "/etc/docker/daemon.json"
+        if os.path.exists(daemon_config):
+            with open(daemon_config, "r") as fh:
+                content = fh.read()
+                if "nvidia" in content.lower():
+                    return "[OK]"
+    except Exception:
+        pass
+    return "[--]"
 
 
 def build_menu_options(
@@ -83,14 +124,16 @@ def build_menu_options(
     statuses.append("")
 
     # 3 - Patches
+    nvenc_status = _check_nvenc_patch_status()
     options.append("Apply NVIDIA Patches (NVENC/NvFBC)")
     descriptions.append("Remove NVENC session limits and enable NvFBC")
-    statuses.append("")
+    statuses.append(nvenc_status)
 
     # 4 - Media Config
+    media_status = _check_media_config_status()
     options.append("Configure for Media Servers")
     descriptions.append("Optimize Docker for Plex/media processing")
-    statuses.append("")
+    statuses.append(media_status)
 
     # 5 - Self-Update
     options.append("Update nvidia-setup")
@@ -225,7 +268,7 @@ def main() -> None:
             options, descriptions, statuses = build_menu_options(installations)
 
             selected = prompt_multi_select(
-                prompt="Select items to run (toggle numbers, Enter to execute):",
+                prompt="NVIDIA Driver Setup",
                 options=options,
                 descriptions=descriptions,
                 statuses=statuses,
