@@ -113,6 +113,17 @@ def _check_pip_updates() -> tuple[bool, str]:
     return False, "Could not determine latest version."
 
 
+def _needs_break_system_packages() -> bool:
+    """Check if pip requires --break-system-packages (PEP 668, Ubuntu 24.04+).
+
+    PEP 668 marks system Python as externally managed via a marker file
+    in the stdlib directory.  When present, pip refuses to install
+    system-wide without the --break-system-packages flag.
+    """
+    stdlib = Path(sys.prefix) / "lib" / f"python{sys.version_info.major}.{sys.version_info.minor}" / "EXTERNALLY-MANAGED"
+    return stdlib.is_file()
+
+
 def _perform_git_update() -> bool:
     """Pull latest changes and reinstall in editable mode.
 
@@ -133,10 +144,10 @@ def _perform_git_update() -> bool:
     log_info(result.stdout.strip())
 
     log_info("Reinstalling package...")
-    result = subprocess.run(
-        [sys.executable, "-m", "pip", "install", "-e", "."],
-        cwd=cwd, capture_output=True, text=True,
-    )
+    pip_cmd = [sys.executable, "-m", "pip", "install", "-e", "."]
+    if _needs_break_system_packages():
+        pip_cmd.insert(4, "--break-system-packages")
+    result = subprocess.run(pip_cmd, cwd=cwd, capture_output=True, text=True)
     if result.returncode != 0:
         log_error(f"pip install failed: {result.stderr.strip()}")
         return False
@@ -151,10 +162,10 @@ def _perform_pip_update() -> bool:
         True on success.
     """
     log_info("Upgrading from PyPI...")
-    result = subprocess.run(
-        [sys.executable, "-m", "pip", "install", "--upgrade", "nvidia-driver-setup"],
-        capture_output=True, text=True,
-    )
+    pip_cmd = [sys.executable, "-m", "pip", "install", "--upgrade", "nvidia-driver-setup"]
+    if _needs_break_system_packages():
+        pip_cmd.insert(4, "--break-system-packages")
+    result = subprocess.run(pip_cmd, capture_output=True, text=True)
     if result.returncode != 0:
         log_error(f"pip upgrade failed: {result.stderr.strip()}")
         return False
