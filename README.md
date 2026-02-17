@@ -10,33 +10,23 @@ A CLI tool for installing and configuring NVIDIA drivers with Docker support on 
 - **Live CUDA version discovery** - fetches available versions from Docker Hub in real-time
 - **NVENC/NvFBC binary patcher** - removes encoding session limits using anchor-based pattern matching
 - **Media server config** - pre-configured Docker Compose for Plex with GPU transcoding
-- **Self-update** - updates itself from git or pip depending on install method
+- **Self-update** - pulls latest changes from GitHub and reinstalls
 - **Smart detection** - detects existing drivers, Docker, and NVIDIA runtime before prompting
 
 ## Install
 
-### pip (recommended)
-
 ```bash
-pip install nvidia-driver-setup
+pip install git+https://github.com/regix1/nvidia-driver-setup.git
 sudo nvidia-setup
 ```
 
-### From source
+### For development
 
 ```bash
 git clone https://github.com/regix1/nvidia-driver-setup.git
 cd nvidia-driver-setup
 pip install -e .
 sudo nvidia-setup
-```
-
-### One-liner (no pip)
-
-```bash
-git clone https://github.com/regix1/nvidia-driver-setup.git
-cd nvidia-driver-setup
-sudo bash setup.sh
 ```
 
 ## Usage
@@ -94,10 +84,7 @@ Unlike sed-based approaches (which can corrupt the binary by matching multiple l
 
 ## Self-Update
 
-The tool can update itself (menu option 6):
-
-- **Git installs** - pulls from `https://github.com/regix1/nvidia-driver-setup.git` and reinstalls
-- **pip installs** - checks PyPI for a newer version and upgrades
+The tool can update itself (menu option 6). It pulls the latest changes from `https://github.com/regix1/nvidia-driver-setup.git` and reinstalls the package.
 
 Self-update always runs last in the execution order. The current session continues with the old code; changes take effect on next launch.
 
