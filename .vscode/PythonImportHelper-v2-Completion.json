@@ -799,7 +799,7 @@
         "kind": 2,
         "importPath": "nvidia_driver_setup.updater",
         "description": "nvidia_driver_setup.updater",
-        "peekOfCode": "def detect_install_method() -> InstallMethod:\n    \"\"\"Detect whether we were installed via git clone or pip.\"\"\"\n    project_root = _get_project_root()\n    if (project_root / \".git\").is_dir():\n        return InstallMethod.GIT_CLONE\n    return InstallMethod.PIP\ndef _check_git_updates() -> tuple[bool, str]:\n    \"\"\"Fetch from origin and check if there are new commits.\n    Returns:\n        (has_updates, summary) where summary is the commit log or a status message.",
+        "peekOfCode": "def detect_install_method() -> InstallMethod:\n    \"\"\"Detect whether we were installed via git clone or pip.\"\"\"\n    project_root = _get_project_root()\n    if (project_root / \".git\").is_dir():\n        return InstallMethod.GIT_CLONE\n    return InstallMethod.PIP\ndef _ensure_origin(cwd: str) -> None:\n    \"\"\"Ensure the git origin remote points to the canonical repo.\"\"\"\n    result = subprocess.run(\n        [\"git\", \"remote\", \"get-url\", \"origin\"],",
         "detail": "nvidia_driver_setup.updater",
         "documentation": {}
     },
@@ -809,6 +809,15 @@
         "importPath": "nvidia_driver_setup.updater",
         "description": "nvidia_driver_setup.updater",
         "peekOfCode": "def run_self_update() -> None:\n    \"\"\"Public entry point: detect method, check for updates, confirm, update.\"\"\"\n    log_step(\"Self-Update Check\")\n    method = detect_install_method()\n    log_info(f\"Install method: {method.value}\")\n    if method == InstallMethod.GIT_CLONE:\n        has_updates, summary = _check_git_updates()\n    elif method == InstallMethod.PIP:\n        has_updates, summary = _check_pip_updates()\n    else:",
+        "detail": "nvidia_driver_setup.updater",
+        "documentation": {}
+    },
+    {
+        "label": "REPO_URL",
+        "kind": 5,
+        "importPath": "nvidia_driver_setup.updater",
+        "description": "nvidia_driver_setup.updater",
+        "peekOfCode": "REPO_URL = \"https://github.com/regix1/nvidia-driver-setup.git\"\nclass InstallMethod(Enum):\n    \"\"\"How nvidia-driver-setup was installed.\"\"\"\n    GIT_CLONE = \"git_clone\"\n    PIP = \"pip\"\n    UNKNOWN = \"unknown\"\ndef _get_project_root() -> Path:\n    \"\"\"Resolve the project root from this file's location.\"\"\"\n    return Path(__file__).resolve().parent.parent\ndef detect_install_method() -> InstallMethod:",
         "detail": "nvidia_driver_setup.updater",
         "documentation": {}
     }

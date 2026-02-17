@@ -11,6 +11,8 @@ from pathlib import Path
 from .utils.logging import log_info, log_warn, log_error, log_step, log_success
 from .utils.prompts import prompt_yes_no
 
+REPO_URL = "https://github.com/regix1/nvidia-driver-setup.git"
+
 
 class InstallMethod(Enum):
     """How nvidia-driver-setup was installed."""
@@ -32,6 +34,25 @@ def detect_install_method() -> InstallMethod:
     return InstallMethod.PIP
 
 
+def _ensure_origin(cwd: str) -> None:
+    """Ensure the git origin remote points to the canonical repo."""
+    result = subprocess.run(
+        ["git", "remote", "get-url", "origin"],
+        cwd=cwd, capture_output=True, text=True,
+    )
+    if result.returncode != 0:
+        # No origin remote at all - add it
+        subprocess.run(
+            ["git", "remote", "add", "origin", REPO_URL],
+            cwd=cwd, capture_output=True, text=True,
+        )
+    elif result.stdout.strip() != REPO_URL:
+        subprocess.run(
+            ["git", "remote", "set-url", "origin", REPO_URL],
+            cwd=cwd, capture_output=True, text=True,
+        )
+
+
 def _check_git_updates() -> tuple[bool, str]:
     """Fetch from origin and check if there are new commits.
 
@@ -40,6 +61,8 @@ def _check_git_updates() -> tuple[bool, str]:
     """
     project_root = _get_project_root()
     cwd = str(project_root)
+
+    _ensure_origin(cwd)
 
     result = subprocess.run(
         ["git", "fetch", "origin", "main"],

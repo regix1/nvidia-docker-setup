@@ -1,210 +1,178 @@
 # NVIDIA Driver Setup
 
-A modular Python tool for installing and configuring NVIDIA drivers with Docker support, optimized for media processing and Plex servers.
+A CLI tool for installing and configuring NVIDIA drivers with Docker support on Ubuntu/Debian, built for media server hardware acceleration.
 
 ## Features
 
-- **Smart Detection**: Automatically detects existing installations
-- **Interactive Menus**: Clear, user-friendly interface
-- **Selective Installation**: Install only what you need
-- **NVIDIA Driver Management**: Automated driver installation with version selection
-- **Docker Integration**: Complete Docker setup with NVIDIA Container Toolkit
-- **CUDA Version Control**: Easy CUDA version selection for containers
-- **NVENC/NvFBC Patches**: Binary-safe patches for unlimited encoding sessions
-- **Media Server Templates**: Pre-configured Plex and FFmpeg setups
-- **GPU Capability Testing**: System checks and validation
+- **Multi-select menu** - pick multiple tasks and run them in one go
+- **NVIDIA driver management** - automated install with version selection and cleanup
+- **Docker + NVIDIA runtime** - Docker CE and NVIDIA Container Toolkit setup
+- **Live CUDA version discovery** - fetches available versions from Docker Hub in real-time
+- **NVENC/NvFBC binary patcher** - removes encoding session limits using anchor-based pattern matching
+- **Media server config** - pre-configured Docker Compose for Plex with GPU transcoding
+- **Self-update** - updates itself from git or pip depending on install method
+- **Smart detection** - detects existing drivers, Docker, and NVIDIA runtime before prompting
 
-## Quick Start
+## Install
 
-### Option 1: pip install
+### pip (recommended)
+
 ```bash
 pip install nvidia-driver-setup
 sudo nvidia-setup
 ```
 
-### Option 2: Run from source
+### From source
+
+```bash
+git clone https://github.com/regix1/nvidia-driver-setup.git
+cd nvidia-driver-setup
+pip install -e .
+sudo nvidia-setup
+```
+
+### One-liner (no pip)
+
 ```bash
 git clone https://github.com/regix1/nvidia-driver-setup.git
 cd nvidia-driver-setup
 sudo bash setup.sh
 ```
 
-## Interface
+## Usage
 
-### System Detection
+Run `sudo nvidia-setup` and use the multi-select menu to toggle items:
+
 ```
 Installation Status:
   NVIDIA Driver:  [OK] 580.126.09
   Docker:         [OK] 28.0.1
   NVIDIA Runtime: [OK] Available
+
+Select items to run (toggle numbers, Enter to execute):
+  0. Exit
+  [*] 1. Reinstall NVIDIA Drivers (Current: 580.126.09) [OK]
+          Reinstall or update NVIDIA drivers
+  [ ] 2. Reconfigure Docker (Current: 28.0.1) [OK]
+          Reconfigure Docker with NVIDIA support
+  [ ] 3. Select CUDA Version
+          Choose CUDA version for containers
+  [*] 4. Apply NVIDIA Patches (NVENC/NvFBC)
+          Remove NVENC session limits and enable NvFBC
+  [ ] 5. Configure for Media Servers
+          Optimize Docker for Plex/media processing
+  [ ] 6. Update nvidia-setup
+          Check for and apply updates to this tool
+
+2 item(s) selected.  Enter numbers to toggle | 'a' = toggle all | Enter = run selected | 0 = exit
 ```
 
-### Menu System
-```
-Select installation options:
-  1. Reinstall NVIDIA Drivers (Current: 580.126.09) [OK]
-     Reinstall or update NVIDIA drivers
+Selected items execute in dependency order: drivers first, then Docker, CUDA, patches, media config, and self-update last.
 
-  2. Reconfigure Docker (Current: 28.0.1) [OK]
-     Reconfigure Docker with NVIDIA support
+## CUDA Version Discovery
 
-  3. Select CUDA Version
-     Choose CUDA version for containers
+CUDA versions are fetched live from the Docker Hub `nvidia/cuda` image tags. The tool shows minimum driver requirements from NVIDIA's release notes alongside each version:
 
-  4. Apply NVIDIA Patches (NVENC/NvFBC)
-     Remove NVENC session limits and enable NvFBC
-
-  5. Configure for Media Servers
-     Optimize Docker for Plex/media processing
-
-  6. Complete Installation (All Components)
-     Install/configure everything automatically
-
-  7. Exit
-     Exit without changes
-```
-
-### CUDA Selection
 ```
 Available CUDA versions for containers:
-  1. 12.4.0 - Latest stable release - RTX 40 series optimized (recommended)
-  2. 12.3.2 - Previous stable - Wide compatibility
-  3. 12.2.2 - LTS candidate - Enterprise ready
-  4. 12.1.1 - Stable release - Good performance
-  5. 11.8.0 - Legacy support - Mature and stable
-  6. Enter custom version
+  1. 13.1.1 - Latest - RTX 50 series / Blackwell  (min driver: 590.48.01) (recommended)
+  2. 13.1.0 - Latest - RTX 50 series / Blackwell  (min driver: 590.44.01)
+  3. 13.0.2 - Latest - RTX 50 series / Blackwell  (min driver: 580.95.05)
+  ...
+  27. 11.8.0 - Legacy - Proven stability  (min driver: 520.61.05)
+  28. 11.7.1 - Legacy - Proven stability  (min driver: 515.48.07)
+  29. Enter custom version
 ```
 
-## Requirements
+Falls back to an offline list if Docker Hub is unreachable.
 
-- Ubuntu 22.04+ (other Debian-based distros may work)
-- NVIDIA GPU
-- Root/sudo access
-- Internet connection
-- Python 3
+## NVENC Session Limit Patch
+
+Consumer GeForce GPUs limit concurrent NVENC encoding sessions. This tool removes that limit by patching `libnvidia-encode.so` directly.
+
+Unlike sed-based approaches (which can corrupt the binary by matching multiple locations), this patcher uses anchor-based pattern matching to locate the exact session-check instruction sequence, then patches only that location. Supports all modern driver versions with automatic pattern detection.
+
+## Self-Update
+
+The tool can update itself (menu option 6):
+
+- **Git installs** - pulls from `https://github.com/regix1/nvidia-driver-setup.git` and reinstalls
+- **pip installs** - checks PyPI for a newer version and upgrades
+
+Self-update always runs last in the execution order. The current session continues with the old code; changes take effect on next launch.
 
 ## Project Structure
 
 ```
 nvidia-driver-setup/
-├── setup.sh                    # Entry point (the only script you need)
-├── main.py                     # Thin wrapper for backwards compatibility
-├── pyproject.toml              # Package configuration (pip installable)
-├── nvidia_driver_setup/        # Main Python package
-│   ├── __init__.py
-│   ├── __main__.py             # python3 -m nvidia_driver_setup
-│   ├── cli.py                  # CLI entry point (nvidia-setup command)
-│   ├── utils/                  # Logging, system utilities, prompts
+├── setup.sh                         # Smart launcher
+├── main.py                          # Backwards-compat wrapper
+├── pyproject.toml                   # pip package config
+├── nvidia_driver_setup/
+│   ├── cli.py                       # Multi-select menu and execution
+│   ├── updater.py                   # Self-update (git/pip)
 │   ├── nvidia/
-│   │   ├── drivers.py          # Driver installation and management
-│   │   ├── cuda.py             # CUDA version selection
-│   │   └── patches.py          # NVENC/NvFBC patch orchestration
-│   ├── docker/                 # Docker setup and configuration
-│   └── system/                 # System checks and validation
+│   │   ├── drivers.py               # Driver install + cleanup
+│   │   ├── cuda.py                  # CUDA version selection (Docker Hub API)
+│   │   └── patches.py               # NVENC/NvFBC binary patcher
+│   ├── docker/
+│   │   ├── setup.py                 # Docker + NVIDIA runtime install
+│   │   └── config.py                # Media server Docker config
+│   ├── system/
+│   │   └── checks.py                # System checks, GPU detection
+│   └── utils/
+│       ├── logging.py               # Color log helpers
+│       ├── prompts.py               # yes/no, choice, multi-select prompts
+│       └── system.py                # run_command(), AptManager
 ├── templates/
 │   ├── docker-daemon.json
 │   ├── docker-daemon-cgroupfs.json
 │   └── plex-nvidia.yml
 └── configs/
-    └── cuda_versions.json
+    └── cuda_versions.json           # Offline CUDA version fallback
 ```
 
-## NVENC Session Limit Patch
+## Requirements
 
-Consumer GeForce GPUs have an artificial limit on concurrent NVENC encoding sessions. This tool includes a custom binary patcher that removes the limit by modifying `libnvidia-encode.so`.
-
-**How it works:**
-- Uses Python3 to scan the binary for the session-check pattern
-- Anchor-based matching ensures only the correct location is patched (unlike sed-based approaches that can corrupt the binary)
-- Automatically detects the byte-pattern variant for the installed driver
-- Supports all modern NVIDIA driver versions
-- Creates a backup before patching with rollback support
-
-The patch is applied automatically through the interactive menu (option 4).
-
-## Usage
-
-### Basic Installation
-```bash
-sudo bash setup.sh
-```
-
-### Testing GPU Integration
-```bash
-# Test NVIDIA Docker integration
-docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi
-
-# Test with Plex (after configuration)
-cd /opt/docker-templates
-docker-compose -f plex-nvidia.yml up -d
-```
-
-## Templates
-
-### Plex Media Server
-Located at `templates/plex-nvidia.yml`:
-- GPU-accelerated transcoding
-- NVIDIA runtime configuration
-- Volume mapping examples
-
-### Docker Daemon Configuration
-- `docker-daemon.json`: Standard NVIDIA configuration
-- `docker-daemon-cgroupfs.json`: Alternative for compatibility issues
+- Ubuntu 22.04+ (Debian-based)
+- NVIDIA GPU
+- Root access (`sudo`)
+- Python 3.10+
+- Internet connection (for driver/Docker downloads; CUDA list has offline fallback)
 
 ## Troubleshooting
 
-**"CUDA_ERROR_NO_DEVICE" in containers:**
-- Run the script and select cgroupfs driver option
-- Reboot after installation
+**CUDA_ERROR_NO_DEVICE in containers** - select the cgroupfs driver option when prompted, then reboot.
 
-**Driver version mismatch:**
-- Use the cleanup option when prompted
-- Reboot after driver installation
+**Driver version mismatch** - use the cleanup option when prompted, then reboot.
 
-**Docker permission denied:**
-- Add user to docker group: `sudo usermod -aG docker $USER`
-- Log out and back in
+**Docker permission denied** - `sudo usermod -aG docker $USER`, then log out and back in.
 
-**NVENC "incompatible client key" after patching:**
-- This usually means the wrong bytes were patched (common with sed-based tools)
-- Re-run the setup and use the NVENC patch option, which uses anchor-based matching
+**NVENC "incompatible client key"** - re-run and use menu option 4 (anchor-based patcher). This usually means a sed-based tool previously patched the wrong location.
 
-**NVENC not working:**
-- Apply the NVENC patch from the menu (option 4)
-- Verify GPU model supports NVENC
+**Test GPU integration:**
 
-**Reset Docker NVIDIA configuration:**
-```bash
-sudo rm /etc/docker/daemon.json
-sudo systemctl restart docker
-sudo bash setup.sh  # Re-run configuration
-```
-
-**Check GPU status:**
 ```bash
 nvidia-smi
-docker run --rm --gpus all nvidia/cuda:12.0-base nvidia-smi
+docker run --rm --gpus all nvidia/cuda:12.8.0-base-ubuntu22.04 nvidia-smi
 ```
 
-## Performance Recommendations
+## Performance
 
-For optimal performance, add these kernel parameters to GRUB:
-```
-pcie_port_pm=off pcie_aspm.policy=performance
-```
+For optimal GPU performance, add kernel parameters to GRUB:
 
-Edit `/etc/default/grub` and add to `GRUB_CMDLINE_LINUX_DEFAULT`, then run:
 ```bash
-sudo update-grub
-sudo reboot
+# Edit /etc/default/grub, add to GRUB_CMDLINE_LINUX_DEFAULT:
+pcie_port_pm=off pcie_aspm.policy=performance
+
+sudo update-grub && sudo reboot
 ```
 
 ## License
 
-This project is provided as-is for educational and personal use.
+Provided as-is for educational and personal use.
 
 ## Acknowledgments
 
+- [keylase/nvidia-patch](https://github.com/keylase/nvidia-patch) for upstream NVENC patch research
 - NVIDIA for GPU drivers and Container Toolkit
-- [keylase/nvidia-patch](https://github.com/keylase/nvidia-patch) for upstream NVENC patches
-- Docker for containerization platform
