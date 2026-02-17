@@ -16,16 +16,17 @@ A CLI tool for installing and configuring NVIDIA drivers with Docker support on 
 ## Install
 
 ```bash
-pip install git+https://github.com/regix1/nvidia-driver-setup.git
-sudo nvidia-setup
-```
-
-### For development
-
-```bash
 git clone https://github.com/regix1/nvidia-driver-setup.git
 cd nvidia-driver-setup
-pip install -e .
+sudo bash setup.sh
+```
+
+`setup.sh` auto-installs the package on first run and launches the tool. On subsequent runs it launches directly.
+
+### Alternative: pip from GitHub
+
+```bash
+pip install git+https://github.com/regix1/nvidia-driver-setup.git
 sudo nvidia-setup
 ```
 
