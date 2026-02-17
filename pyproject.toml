@@ -1,0 +1,48 @@
+[build-system]
+requires = ["setuptools>=64", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "nvidia-driver-setup"
+version = "1.0.0"
+description = "A modular tool for installing and configuring NVIDIA drivers with Docker support, optimized for media processing and Plex servers."
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "MIT"}
+keywords = ["nvidia", "driver", "docker", "gpu", "nvenc", "cuda"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Environment :: Console",
+    "Intended Audience :: System Administrators",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.8",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: System :: Installation/Setup",
+    "Topic :: System :: Systems Administration",
+]
+
+[project.scripts]
+nvidia-setup = "nvidia_driver_setup.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["nvidia_driver_setup*"]
+
+[tool.setuptools.package-data]
+nvidia_driver_setup = ["py.typed"]
+
+# Include templates, configs, and scripts directories at the project root
+# These are referenced by the Python code at runtime via __file__ relative paths
+[tool.setuptools.data-files]
+"share/nvidia-driver-setup/templates" = [
+    "templates/docker-daemon.json",
+    "templates/docker-daemon-cgroupfs.json",
+    "templates/plex-nvidia.yml",
+]
+"share/nvidia-driver-setup/configs" = [
+    "configs/cuda_versions.json",
+]

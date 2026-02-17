@@ -3,9 +3,9 @@
 import json
 import os
 import shutil
-from utils.logging import log_info, log_step
-from utils.prompts import prompt_yes_no
-from utils.system import run_command
+from ..utils.logging import log_info, log_step
+from ..utils.prompts import prompt_yes_no
+from ..utils.system import run_command
 
 
 def configure_docker_for_media():

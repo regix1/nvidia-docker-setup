@@ -1,5 +1,5 @@
 #!/bin/bash
-# NVIDIA Docker Setup - Entry Point
+# NVIDIA Driver Setup - Entry Point
 # This is the only script you need to run.
 
 set -e
@@ -14,7 +14,7 @@ NC='\033[0m'
 
 echo -e "${BLUE}${BOLD}"
 echo "  ================================================================"
-echo "     NVIDIA Docker Setup"
+echo "     NVIDIA Driver Setup"
 echo "     Hardware Acceleration for Media Servers"
 echo "  ================================================================"
 echo -e "${NC}"
@@ -33,22 +33,38 @@ if ! command -v python3 &>/dev/null; then
     exit 1
 fi
 
-# ── Git check ──────────────────────────────────────────────────────
-if ! command -v git &>/dev/null; then
-    echo -e "${RED}Error: Git is required but not installed.${NC}"
-    echo -e "  Install it with: ${YELLOW}sudo apt install -y git${NC}"
-    exit 1
+# ── Launch (try methods in order of preference) ───────────────────
+
+# Method 1: pip-installed CLI command
+if command -v nvidia-setup &>/dev/null; then
+    echo -e "${GREEN}Found nvidia-setup command. Launching...${NC}"
+    echo
+    exec nvidia-setup "$@"
 fi
 
-# ── Verify main.py exists ─────────────────────────────────────────
+# Method 2: Package installed, use python3 -m
+if python3 -c "import nvidia_driver_setup" &>/dev/null 2>&1; then
+    echo -e "${GREEN}Found nvidia_driver_setup package. Launching...${NC}"
+    echo
+    exec python3 -m nvidia_driver_setup "$@"
+fi
+
+# Method 3: Run from source directory (backwards compatibility)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [[ ! -f "${SCRIPT_DIR}/main.py" ]]; then
-    echo -e "${RED}Error: main.py not found in ${SCRIPT_DIR}${NC}"
-    echo "  Please run this script from the project directory."
-    exit 1
+if [[ -f "${SCRIPT_DIR}/main.py" ]]; then
+    # Git check (only needed when running from source)
+    if ! command -v git &>/dev/null; then
+        echo -e "${RED}Error: Git is required but not installed.${NC}"
+        echo -e "  Install it with: ${YELLOW}sudo apt install -y git${NC}"
+        exit 1
+    fi
+
+    echo -e "${GREEN}Running from source directory. Launching...${NC}"
+    echo
+    exec python3 "${SCRIPT_DIR}/main.py" "$@"
 fi
 
-# ── Launch ─────────────────────────────────────────────────────────
-echo -e "${GREEN}All checks passed. Launching setup...${NC}"
-echo
-exec python3 "${SCRIPT_DIR}/main.py" "$@"
+echo -e "${RED}Error: Could not find nvidia-driver-setup.${NC}"
+echo "  Install it with: pip install nvidia-driver-setup"
+echo "  Or run from the project directory: sudo bash setup.sh"
+exit 1

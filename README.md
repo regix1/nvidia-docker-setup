@@ -1,4 +1,4 @@
-# NVIDIA Docker Setup
+# NVIDIA Driver Setup
 
 A modular Python tool for installing and configuring NVIDIA drivers with Docker support, optimized for media processing and Plex servers.
 
@@ -16,9 +16,16 @@ A modular Python tool for installing and configuring NVIDIA drivers with Docker 
 
 ## Quick Start
 
+### Option 1: pip install
 ```bash
-git clone https://github.com/regix1/nvidia-docker-setup.git
-cd nvidia-docker-setup
+pip install nvidia-driver-setup
+sudo nvidia-setup
+```
+
+### Option 2: Run from source
+```bash
+git clone https://github.com/regix1/nvidia-driver-setup.git
+cd nvidia-driver-setup
 sudo bash setup.sh
 ```
 
@@ -79,18 +86,21 @@ Available CUDA versions for containers:
 ## Project Structure
 
 ```
-nvidia-docker-setup/
-├── setup.sh                # Entry point (the only script you need)
-├── main.py                 # Python application
-├── requirements.txt        # Python dependencies
-├── src/
-│   ├── utils/              # Logging, system utilities, prompts
+nvidia-driver-setup/
+├── setup.sh                    # Entry point (the only script you need)
+├── main.py                     # Thin wrapper for backwards compatibility
+├── pyproject.toml              # Package configuration (pip installable)
+├── nvidia_driver_setup/        # Main Python package
+│   ├── __init__.py
+│   ├── __main__.py             # python3 -m nvidia_driver_setup
+│   ├── cli.py                  # CLI entry point (nvidia-setup command)
+│   ├── utils/                  # Logging, system utilities, prompts
 │   ├── nvidia/
-│   │   ├── drivers.py      # Driver installation and management
-│   │   ├── cuda.py         # CUDA version selection
-│   │   └── patches.py      # NVENC/NvFBC patch orchestration
-│   ├── docker/             # Docker setup and configuration
-│   └── system/             # System checks and validation
+│   │   ├── drivers.py          # Driver installation and management
+│   │   ├── cuda.py             # CUDA version selection
+│   │   └── patches.py          # NVENC/NvFBC patch orchestration
+│   ├── docker/                 # Docker setup and configuration
+│   └── system/                 # System checks and validation
 ├── templates/
 │   ├── docker-daemon.json
 │   ├── docker-daemon-cgroupfs.json

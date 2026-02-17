@@ -15,9 +15,9 @@ import tempfile
 from dataclasses import dataclass, field
 from typing import Optional
 
-from utils.logging import log_info, log_step, log_warn, log_success, log_error
-from utils.prompts import prompt_yes_no
-from utils.system import run_command
+from ..utils.logging import log_info, log_step, log_warn, log_success, log_error
+from ..utils.prompts import prompt_yes_no
+from ..utils.system import run_command
 
 
 # Regex that matches a valid NVIDIA driver version string (e.g. 580.126.09)

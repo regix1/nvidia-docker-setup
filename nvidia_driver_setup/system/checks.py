@@ -3,9 +3,9 @@
 import sys
 import os
 import re
-from utils.logging import log_info, log_warn, log_error, log_step
-from utils.prompts import prompt_yes_no, prompt_acknowledge
-from utils.system import run_command, AptManager, cleanup_nvidia_repos, cleanup_old_nvidia_drivers, full_nvidia_cleanup, check_internet, get_os_info, check_nvidia_gpu
+from ..utils.logging import log_info, log_warn, log_error, log_step
+from ..utils.prompts import prompt_yes_no, prompt_acknowledge
+from ..utils.system import run_command, AptManager, cleanup_nvidia_repos, cleanup_old_nvidia_drivers, full_nvidia_cleanup, check_internet, get_os_info, check_nvidia_gpu
 
 
 def get_system_info():

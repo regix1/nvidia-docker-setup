@@ -4,9 +4,9 @@ import glob
 import os
 import re
 import subprocess
-from utils.logging import log_info, log_warn, log_error, log_step
-from utils.prompts import prompt_yes_no, prompt_input, prompt_choice
-from utils.system import run_command, AptManager, cleanup_stale_nvidia_libraries, repair_nvidia_symlinks
+from ..utils.logging import log_info, log_warn, log_error, log_step
+from ..utils.prompts import prompt_yes_no, prompt_input, prompt_choice
+from ..utils.system import run_command, AptManager, cleanup_stale_nvidia_libraries, repair_nvidia_symlinks
 
 # Regex that matches a valid NVIDIA driver version string (e.g. 580.126.09 or 590)
 _VERSION_PATTERN = re.compile(r'^[0-9]+\.[0-9]+')

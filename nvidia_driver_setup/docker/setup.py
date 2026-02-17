@@ -1,8 +1,8 @@
 """Docker installation and NVIDIA integration setup"""
 
 import os
-from utils.logging import log_info, log_warn, log_step
-from utils.system import run_command, AptManager, get_os_info
+from ..utils.logging import log_info, log_warn, log_step
+from ..utils.system import run_command, AptManager, get_os_info
 
 
 DOCKER_COMPOSE_VERSION = "v2.25.0"

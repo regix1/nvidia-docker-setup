@@ -1,4 +1,4 @@
-"""Logging utilities for NVIDIA Docker setup"""
+"""Logging utilities for NVIDIA Driver Setup"""
 
 
 class Colors:
