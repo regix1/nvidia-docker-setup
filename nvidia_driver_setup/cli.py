@@ -7,19 +7,19 @@ import os
 import sys
 import traceback
 
-from nvidia_driver_setup.utils.logging import log_error, log_step, log_info, log_success, log_warn
+from nvidia_driver_setup.utils.logging import log_error, log_step, log_info, log_success
 from nvidia_driver_setup.utils.prompts import prompt_yes_no, prompt_multi_select
 from nvidia_driver_setup.system.checks import (
     run_preliminary_checks,
     detect_existing_installations,
     get_system_info,
     display_system_info,
-    check_gpu_capabilities,
 )
+from nvidia_driver_setup.utils.system import full_nvidia_cleanup, cleanup_nvidia_repos
 from nvidia_driver_setup.nvidia.drivers import select_nvidia_driver
 from nvidia_driver_setup.nvidia.cuda import select_cuda_version
 from nvidia_driver_setup.docker.setup import setup_docker
-from nvidia_driver_setup.nvidia.patches import apply_nvidia_patches
+from nvidia_driver_setup.nvidia.patches import apply_nvidia_patches, get_nvenc_session_info
 from nvidia_driver_setup.docker.config import configure_docker_for_media
 
 # Execution priority per menu index (lower = runs first).
@@ -30,8 +30,13 @@ EXECUTION_ORDER: dict[int, int] = {
     2: 3,  # CUDA
     3: 4,  # Patches
     4: 5,  # Media Config
-    5: 6,  # Self-Update
+    5: 6,  # System Audit / Cleanup
+    6: 7,  # Self-Update (always last)
 }
+
+# Menu indices whose execution can change installed component state.
+# Only re-run detect_existing_installations() when these ran.
+_STATUS_CHANGING_INDICES: set[int] = {0, 1, 3, 4}  # drivers, docker, patches, media
 
 
 def show_banner() -> None:
@@ -46,26 +51,16 @@ def show_banner() -> None:
 
 
 def _check_nvenc_patch_status() -> str:
-    """Check if NVENC patch is already applied.
+    """Return a short status label for the NVENC patch state.
 
-    Returns:
-        Status string: '[Patched]', '[Unpatched]', or ''
+    Uses get_nvenc_session_info() for smart detection that accounts
+    for professional GPUs, driver version, and patch state.
     """
     try:
-        from nvidia_driver_setup.nvidia.patches import _patch_binary, _LIBRARY_SEARCH_PATHS
-        import glob
-
-        for search_path in _LIBRARY_SEARCH_PATHS:
-            pattern = os.path.join(search_path, "libnvidia-encode.so.???.*")
-            libs = glob.glob(pattern)
-            if libs:
-                result = _patch_binary(libs[0], dry_run=True, verbose=False)
-                if result.already_patched:
-                    return "[Patched]"
-                return "[Unpatched]"
+        info = get_nvenc_session_info()
+        return info['status_label']
     except Exception:
-        pass
-    return ""
+        return ""
 
 
 def _check_media_config_status() -> str:
@@ -135,7 +130,12 @@ def build_menu_options(
     descriptions.append("Optimize Docker for Plex/media processing")
     statuses.append(media_status)
 
-    # 5 - Self-Update
+    # 5 - System Audit / Cleanup
+    options.append("System Audit / Cleanup")
+    descriptions.append("Scan for old drivers, stale libraries, and repo issues")
+    statuses.append("")
+
+    # 6 - Self-Update
     options.append("Update nvidia-setup")
     descriptions.append("Check for and apply updates to this tool")
     statuses.append("")
@@ -172,7 +172,19 @@ def _execute_single_item(idx: int, installations: dict) -> None:
     elif idx == 4:  # Media Config
         configure_docker_for_media()
 
-    elif idx == 5:  # Self-Update
+    elif idx == 5:  # System Audit / Cleanup
+        log_step("System Audit / Cleanup")
+        log_info("Scanning for issues (dry-run)...")
+        has_issues = full_nvidia_cleanup(dry_run=True)
+        if has_issues:
+            if prompt_yes_no("Issues found. Apply fixes now?"):
+                full_nvidia_cleanup(dry_run=False)
+                cleanup_nvidia_repos()
+        else:
+            log_success("System is clean -- no old drivers or stale libraries found")
+            cleanup_nvidia_repos()
+
+    elif idx == 6:  # Self-Update
         from nvidia_driver_setup.updater import run_self_update
         run_self_update()
 
@@ -219,6 +231,30 @@ Next Steps:
     print(summary)
 
 
+def _display_status(installations: dict) -> None:
+    """Print a compact installation-status block."""
+    nvidia_status = (
+        f"[OK] {installations['nvidia_driver']['version']}"
+        if installations["nvidia_driver"]["installed"]
+        else "[--] Not installed"
+    )
+    docker_status = (
+        f"[OK] {installations['docker']['version']}"
+        if installations["docker"]["installed"]
+        else "[--] Not installed"
+    )
+    runtime_status = (
+        "[OK] Available"
+        if installations["nvidia_runtime"]["installed"]
+        else "[--] Not configured"
+    )
+    print("\nInstallation Status:")
+    print(f"  NVIDIA Driver:  {nvidia_status}")
+    print(f"  Docker:         {docker_status}")
+    print(f"  NVIDIA Runtime: {runtime_status}")
+    print()
+
+
 def main() -> None:
     """Main installation process."""
     try:
@@ -234,37 +270,19 @@ def main() -> None:
         system_info = get_system_info()
         display_system_info(system_info)
 
-        # Run system checks
+        # Run system checks (fast: GPU, OS, deps, internet)
         run_preliminary_checks()
 
         # Detect existing installations
         log_step("Detecting Installed Components")
         installations = detect_existing_installations()
 
-        # Show installation status
-        print("\nInstallation Status:")
-        nvidia_status = (
-            f"[OK] {installations['nvidia_driver']['version']}"
-            if installations["nvidia_driver"]["installed"]
-            else "[--] Not installed"
-        )
-        docker_status = (
-            f"[OK] {installations['docker']['version']}"
-            if installations["docker"]["installed"]
-            else "[--] Not installed"
-        )
-        runtime_status = (
-            "[OK] Available"
-            if installations["nvidia_runtime"]["installed"]
-            else "[--] Not configured"
-        )
-        print(f"  NVIDIA Driver:  {nvidia_status}")
-        print(f"  Docker:         {docker_status}")
-        print(f"  NVIDIA Runtime: {runtime_status}")
-        print()
+        any_actions_ran = False
 
         # Interactive multi-select menu loop
         while True:
+            _display_status(installations)
+
             options, descriptions, statuses = build_menu_options(installations)
 
             selected = prompt_multi_select(
@@ -275,24 +293,35 @@ def main() -> None:
             )
 
             if not selected:
-                log_info("Exiting without changes.")
                 break
 
             execute_selected_items(selected, installations)
+            any_actions_ran = True
 
-            # Refresh installation status after running items
-            installations = detect_existing_installations()
+            # Only refresh detection if status-changing items ran
+            if _STATUS_CHANGING_INDICES.intersection(selected):
+                installations = detect_existing_installations()
 
-            if not prompt_yes_no("Would you like to perform additional actions?"):
-                break
+            # Pause so user can read output before menu redraws
+            print()
+            log_info("Press Enter to return to menu...")
+            input()
 
-        show_post_installation_summary()
+            # Clear screen for fresh menu redraw
+            print("\033[2J\033[H", end="", flush=True)
+            show_banner()
 
-        if prompt_yes_no("Would you like to reboot now?"):
-            os.system("reboot")
+        if any_actions_ran:
+            show_post_installation_summary()
+
+            if prompt_yes_no("Would you like to reboot now?"):
+                os.system("reboot")
+        else:
+            log_info("No changes made. Goodbye!")
 
     except KeyboardInterrupt:
-        log_error("Installation cancelled by user")
+        print()
+        log_info("Cancelled.")
         sys.exit(1)
     except Exception as e:
         log_error(f"Installation failed: {str(e)}")

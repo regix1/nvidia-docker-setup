@@ -23,12 +23,18 @@ from ..utils.system import run_command
 # Regex that matches a valid NVIDIA driver version string (e.g. 580.126.09)
 _VERSION_PATTERN = re.compile(r'^[0-9]+\.[0-9]+')
 
-# GPU architectures that do NOT need the NVENC session limit patch
-# (NVIDIA removed the limit for Ada Lovelace and newer consumer GPUs)
-_NVENC_UNLIMITED_ARCHITECTURES: dict[str, float] = {
-    "Ada Lovelace": 8.9,   # RTX 40-series
-    "Blackwell": 10.0,     # RTX 50-series
-}
+# Professional GPU name patterns (these GPUs have unrestricted NVENC sessions)
+_PROFESSIONAL_GPU_PATTERNS: list[str] = [
+    "quadro", "tesla", "rtx a", "rtx pro",
+    " a100", " a40", " a30", " a16", " a10", " a2",
+    " l40", " l20", " l4", " l2",
+    " h100", " h200", " b100", " b200",
+]
+
+# Driver version thresholds for consumer NVENC session limits (Linux)
+_NVENC_LIMIT_12_MIN_DRIVER = 590
+_NVENC_LIMIT_5_MIN_DRIVER = 531
+_NVENC_LIMIT_3_MIN_DRIVER = 450
 
 # Backup directory for original libnvidia-encode.so files
 _BACKUP_DIR = "/opt/nvidia/libnvidia-encode-backup"
@@ -297,28 +303,119 @@ def _detect_gpu_architecture() -> Optional[tuple[str, float]]:
         return None
 
 
-def _gpu_needs_nvenc_patch() -> bool:
-    """Check whether the installed GPU actually needs the NVENC session limit patch.
+def _is_professional_gpu() -> bool:
+    """Check if the installed GPU is a professional/datacenter model.
 
-    RTX 40-series (Ada Lovelace, compute 8.9) and newer do NOT have NVENC session
-    limits on consumer GPUs. Patching provides no benefit and risks corrupting the
-    library.
+    Professional GPUs (Quadro, Tesla, RTX A-series, RTX PRO, L-series, etc.)
+    have unrestricted NVENC sessions and never need patching.
+    """
+    try:
+        result = subprocess.run(
+            "nvidia-smi --query-gpu=name --format=csv,noheader",
+            shell=True,
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode != 0:
+            return False
+        gpu_name = result.stdout.strip().split('\n')[0].lower()
+        return any(pattern in gpu_name for pattern in _PROFESSIONAL_GPU_PATTERNS)
+    except OSError:
+        return False
+
+
+def get_nvenc_session_info() -> dict:
+    """Return NVENC session status for the current GPU and driver.
 
     Returns:
-        True if the GPU needs the patch, False if the GPU has unlimited sessions natively.
+        Dict with keys:
+            native_limit: int or None (12, 5, 3, or None for unrestricted)
+            is_patched: bool
+            is_professional: bool
+            driver_version: str or None
+            status_label: str  (e.g. "[12 sessions]", "[Unlimited]", "[Pro]")
+            patch_useful: bool (True if patching would increase sessions)
     """
-    arch_info = _detect_gpu_architecture()
-    if arch_info is None:
-        # Can't detect, assume patch is needed (older GPU likely)
-        return True
+    info: dict = {
+        'native_limit': None,
+        'is_patched': False,
+        'is_professional': False,
+        'driver_version': None,
+        'status_label': '',
+        'patch_useful': False,
+    }
 
-    arch_name, compute_cap = arch_info
-    for unlimited_arch, min_cap in _NVENC_UNLIMITED_ARCHITECTURES.items():
-        if compute_cap >= min_cap:
-            log_info(f"GPU architecture: {arch_name} (compute {compute_cap})")
-            log_info(f"NVIDIA removed NVENC session limits for {unlimited_arch} and newer GPUs")
-            log_info("No patch is needed -- your GPU supports unlimited NVENC sessions natively")
-            return False
+    # Detect driver version
+    driver_version = _detect_driver_version(verbose=False)
+    info['driver_version'] = driver_version
+
+    # Professional GPU check
+    if _is_professional_gpu():
+        info['is_professional'] = True
+        info['status_label'] = "[Pro - Unrestricted]"
+        info['patch_useful'] = False
+        return info
+
+    # Check if already patched
+    is_patched = False
+    try:
+        for search_path in _LIBRARY_SEARCH_PATHS:
+            pattern = os.path.join(search_path, "libnvidia-encode.so.???.*")
+            libs = glob.glob(pattern)
+            if libs:
+                result = _patch_binary(libs[0], dry_run=True, verbose=False)
+                is_patched = result.already_patched
+                break
+    except Exception:
+        pass
+
+    info['is_patched'] = is_patched
+
+    if is_patched:
+        info['status_label'] = "[Unlimited]"
+        info['patch_useful'] = False
+        return info
+
+    # Determine native limit from driver version
+    if driver_version:
+        try:
+            major = int(driver_version.split('.')[0])
+        except (ValueError, IndexError):
+            major = 0
+
+        if major >= _NVENC_LIMIT_12_MIN_DRIVER:
+            info['native_limit'] = 12
+            info['status_label'] = "[12 sessions]"
+        elif major >= _NVENC_LIMIT_5_MIN_DRIVER:
+            info['native_limit'] = 5
+            info['status_label'] = "[5 sessions]"
+        elif major >= _NVENC_LIMIT_3_MIN_DRIVER:
+            info['native_limit'] = 3
+            info['status_label'] = "[3 sessions]"
+        else:
+            info['native_limit'] = 3
+            info['status_label'] = "[Limited]"
+    else:
+        info['status_label'] = "[Unknown]"
+
+    info['patch_useful'] = True
+    return info
+
+
+def _gpu_needs_nvenc_patch() -> bool:
+    """Check whether the installed GPU needs the NVENC session limit patch.
+
+    Professional GPUs (Quadro, Tesla, RTX A/PRO, etc.) have unrestricted
+    NVENC sessions and never need patching.  All consumer GeForce GPUs
+    have a driver-enforced session cap (12 on driver 590+, fewer on older
+    drivers) and benefit from patching.
+
+    Returns:
+        True if the GPU needs/benefits from the patch, False for pro GPUs.
+    """
+    if _is_professional_gpu():
+        log_info("Professional GPU detected -- NVENC sessions are unrestricted")
+        return False
 
     return True
 
@@ -649,10 +746,27 @@ def apply_nvidia_patches() -> None:
     """Apply NVIDIA patches for unlimited NVENC sessions"""
     log_step("NVIDIA NVENC & NvFBC unlimited sessions patch...")
 
-    if not prompt_yes_no("Would you like to patch NVIDIA drivers to remove NVENC session limit?"):
-        return
+    session_info = get_nvenc_session_info()
 
-    _apply_nvenc_patch()
+    if session_info['is_professional']:
+        log_success("Professional GPU detected -- NVENC sessions are already unrestricted")
+        log_info("No NVENC patch needed")
+    elif session_info['is_patched']:
+        log_success("NVENC is already patched -- sessions are unlimited")
+    else:
+        limit = session_info['native_limit']
+        if limit and limit >= 12:
+            log_info(f"Your GPU currently supports {limit} concurrent NVENC sessions")
+            log_info("Patching removes this limit entirely (unlimited sessions)")
+            if not prompt_yes_no("Apply patch for unlimited NVENC sessions?"):
+                if prompt_yes_no("Would you like to patch for NvFBC support (useful for OBS)?"):
+                    _apply_nvfbc_patch()
+                return
+        else:
+            if not prompt_yes_no("Would you like to patch NVIDIA drivers to remove NVENC session limit?"):
+                return
+
+        _apply_nvenc_patch()
 
     if prompt_yes_no("Would you also like to patch for NvFBC support (useful for OBS)?"):
         _apply_nvfbc_patch()

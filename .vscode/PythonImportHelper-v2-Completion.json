@@ -210,11 +210,19 @@
         "documentation": {}
     },
     {
-        "label": "check_gpu_capabilities",
-        "importPath": "nvidia_driver_setup.system.checks",
-        "description": "nvidia_driver_setup.system.checks",
+        "label": "full_nvidia_cleanup",
+        "importPath": "nvidia_driver_setup.utils.system",
+        "description": "nvidia_driver_setup.utils.system",
         "isExtraImport": true,
-        "detail": "nvidia_driver_setup.system.checks",
+        "detail": "nvidia_driver_setup.utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "cleanup_nvidia_repos",
+        "importPath": "nvidia_driver_setup.utils.system",
+        "description": "nvidia_driver_setup.utils.system",
+        "isExtraImport": true,
+        "detail": "nvidia_driver_setup.utils.system",
         "documentation": {}
     },
     {
@@ -243,6 +251,14 @@
     },
     {
         "label": "apply_nvidia_patches",
+        "importPath": "nvidia_driver_setup.nvidia.patches",
+        "description": "nvidia_driver_setup.nvidia.patches",
+        "isExtraImport": true,
+        "detail": "nvidia_driver_setup.nvidia.patches",
+        "documentation": {}
+    },
+    {
+        "label": "get_nvenc_session_info",
         "importPath": "nvidia_driver_setup.nvidia.patches",
         "description": "nvidia_driver_setup.nvidia.patches",
         "isExtraImport": true,
@@ -390,11 +406,20 @@
         "documentation": {}
     },
     {
+        "label": "get_nvenc_session_info",
+        "kind": 2,
+        "importPath": "nvidia_driver_setup.nvidia.patches",
+        "description": "nvidia_driver_setup.nvidia.patches",
+        "peekOfCode": "def get_nvenc_session_info() -> dict:\n    \"\"\"Return NVENC session status for the current GPU and driver.\n    Returns:\n        Dict with keys:\n            native_limit: int or None (12, 5, 3, or None for unrestricted)\n            is_patched: bool\n            is_professional: bool\n            driver_version: str or None\n            status_label: str  (e.g. \"[12 sessions]\", \"[Unlimited]\", \"[Pro]\")\n            patch_useful: bool (True if patching would increase sessions)",
+        "detail": "nvidia_driver_setup.nvidia.patches",
+        "documentation": {}
+    },
+    {
         "label": "apply_nvidia_patches",
         "kind": 2,
         "importPath": "nvidia_driver_setup.nvidia.patches",
         "description": "nvidia_driver_setup.nvidia.patches",
-        "peekOfCode": "def apply_nvidia_patches() -> None:\n    \"\"\"Apply NVIDIA patches for unlimited NVENC sessions\"\"\"\n    log_step(\"NVIDIA NVENC & NvFBC unlimited sessions patch...\")\n    if not prompt_yes_no(\"Would you like to patch NVIDIA drivers to remove NVENC session limit?\"):\n        return\n    _apply_nvenc_patch()\n    if prompt_yes_no(\"Would you also like to patch for NvFBC support (useful for OBS)?\"):\n        _apply_nvfbc_patch()\ndef _nvidia_smi_works() -> bool:\n    \"\"\"Check whether nvidia-smi can successfully query the driver.",
+        "peekOfCode": "def apply_nvidia_patches() -> None:\n    \"\"\"Apply NVIDIA patches for unlimited NVENC sessions\"\"\"\n    log_step(\"NVIDIA NVENC & NvFBC unlimited sessions patch...\")\n    session_info = get_nvenc_session_info()\n    if session_info['is_professional']:\n        log_success(\"Professional GPU detected -- NVENC sessions are already unrestricted\")\n        log_info(\"No NVENC patch needed\")\n    elif session_info['is_patched']:\n        log_success(\"NVENC is already patched -- sessions are unlimited\")\n    else:",
         "detail": "nvidia_driver_setup.nvidia.patches",
         "documentation": {}
     },
@@ -403,7 +428,34 @@
         "kind": 5,
         "importPath": "nvidia_driver_setup.nvidia.patches",
         "description": "nvidia_driver_setup.nvidia.patches",
-        "peekOfCode": "_VERSION_PATTERN = re.compile(r'^[0-9]+\\.[0-9]+')\n# GPU architectures that do NOT need the NVENC session limit patch\n# (NVIDIA removed the limit for Ada Lovelace and newer consumer GPUs)\n_NVENC_UNLIMITED_ARCHITECTURES: dict[str, float] = {\n    \"Ada Lovelace\": 8.9,   # RTX 40-series\n    \"Blackwell\": 10.0,     # RTX 50-series\n}\n# Backup directory for original libnvidia-encode.so files\n_BACKUP_DIR = \"/opt/nvidia/libnvidia-encode-backup\"\n# Standard library search paths (ordered by preference)",
+        "peekOfCode": "_VERSION_PATTERN = re.compile(r'^[0-9]+\\.[0-9]+')\n# Professional GPU name patterns (these GPUs have unrestricted NVENC sessions)\n_PROFESSIONAL_GPU_PATTERNS: list[str] = [\n    \"quadro\", \"tesla\", \"rtx a\", \"rtx pro\",\n    \" a100\", \" a40\", \" a30\", \" a16\", \" a10\", \" a2\",\n    \" l40\", \" l20\", \" l4\", \" l2\",\n    \" h100\", \" h200\", \" b100\", \" b200\",\n]\n# Driver version thresholds for consumer NVENC session limits (Linux)\n_NVENC_LIMIT_12_MIN_DRIVER = 590",
+        "detail": "nvidia_driver_setup.nvidia.patches",
+        "documentation": {}
+    },
+    {
+        "label": "_NVENC_LIMIT_12_MIN_DRIVER",
+        "kind": 5,
+        "importPath": "nvidia_driver_setup.nvidia.patches",
+        "description": "nvidia_driver_setup.nvidia.patches",
+        "peekOfCode": "_NVENC_LIMIT_12_MIN_DRIVER = 590\n_NVENC_LIMIT_5_MIN_DRIVER = 531\n_NVENC_LIMIT_3_MIN_DRIVER = 450\n# Backup directory for original libnvidia-encode.so files\n_BACKUP_DIR = \"/opt/nvidia/libnvidia-encode-backup\"\n# Standard library search paths (ordered by preference)\n_LIBRARY_SEARCH_PATHS: list[str] = [\n    \"/usr/lib/x86_64-linux-gnu\",\n    \"/usr/lib64\",\n    \"/usr/lib\",",
+        "detail": "nvidia_driver_setup.nvidia.patches",
+        "documentation": {}
+    },
+    {
+        "label": "_NVENC_LIMIT_5_MIN_DRIVER",
+        "kind": 5,
+        "importPath": "nvidia_driver_setup.nvidia.patches",
+        "description": "nvidia_driver_setup.nvidia.patches",
+        "peekOfCode": "_NVENC_LIMIT_5_MIN_DRIVER = 531\n_NVENC_LIMIT_3_MIN_DRIVER = 450\n# Backup directory for original libnvidia-encode.so files\n_BACKUP_DIR = \"/opt/nvidia/libnvidia-encode-backup\"\n# Standard library search paths (ordered by preference)\n_LIBRARY_SEARCH_PATHS: list[str] = [\n    \"/usr/lib/x86_64-linux-gnu\",\n    \"/usr/lib64\",\n    \"/usr/lib\",\n    \"/lib/x86_64-linux-gnu\",",
+        "detail": "nvidia_driver_setup.nvidia.patches",
+        "documentation": {}
+    },
+    {
+        "label": "_NVENC_LIMIT_3_MIN_DRIVER",
+        "kind": 5,
+        "importPath": "nvidia_driver_setup.nvidia.patches",
+        "description": "nvidia_driver_setup.nvidia.patches",
+        "peekOfCode": "_NVENC_LIMIT_3_MIN_DRIVER = 450\n# Backup directory for original libnvidia-encode.so files\n_BACKUP_DIR = \"/opt/nvidia/libnvidia-encode-backup\"\n# Standard library search paths (ordered by preference)\n_LIBRARY_SEARCH_PATHS: list[str] = [\n    \"/usr/lib/x86_64-linux-gnu\",\n    \"/usr/lib64\",\n    \"/usr/lib\",\n    \"/lib/x86_64-linux-gnu\",\n]",
         "detail": "nvidia_driver_setup.nvidia.patches",
         "documentation": {}
     },
@@ -439,7 +491,7 @@
         "kind": 2,
         "importPath": "nvidia_driver_setup.system.checks",
         "description": "nvidia_driver_setup.system.checks",
-        "peekOfCode": "def run_preliminary_checks():\n    \"\"\"Run all preliminary system checks\"\"\"\n    log_step(\"Running preliminary system checks...\")\n    _display_performance_recommendations()\n    _check_nvidia_gpu_present()\n    _offer_cleanup_option()\n    _check_ubuntu_version()\n    _install_dependencies()\n    _check_internet_connectivity()\ndef _display_performance_recommendations():",
+        "peekOfCode": "def run_preliminary_checks():\n    \"\"\"Run all preliminary system checks.\n    Only performs fast, essential gates before showing the menu:\n    GPU present, OS version, dependencies, and internet.\n    Performance recommendations are shown once (marker file).\n    Cleanup/audit is available as a menu item.\n    \"\"\"\n    log_step(\"Running preliminary system checks...\")\n    _show_performance_note_once()\n    _check_nvidia_gpu_present()",
         "detail": "nvidia_driver_setup.system.checks",
         "documentation": {}
     },
@@ -457,7 +509,16 @@
         "kind": 2,
         "importPath": "nvidia_driver_setup.system.checks",
         "description": "nvidia_driver_setup.system.checks",
-        "peekOfCode": "def check_gpu_capabilities():\n    \"\"\"Check GPU capabilities for media processing\"\"\"\n    log_step(\"Checking GPU capabilities for media processing...\")\n    try:\n        # Get GPU model\n        gpu_model = run_command(\n            \"nvidia-smi --query-gpu=gpu_name --format=csv,noheader\", \n            capture_output=True\n        )\n        log_info(f\"Detected GPU: {gpu_model}\")",
+        "peekOfCode": "def check_gpu_capabilities():\n    \"\"\"Check GPU capabilities for media processing\"\"\"\n    log_step(\"Checking GPU capabilities for media processing...\")\n    try:\n        # Get GPU model\n        gpu_model = run_command(\n            \"nvidia-smi --query-gpu=gpu_name --format=csv,noheader\",\n            capture_output=True\n        )\n        log_info(f\"Detected GPU: {gpu_model}\")",
+        "detail": "nvidia_driver_setup.system.checks",
+        "documentation": {}
+    },
+    {
+        "label": "_ACKNOWLEDGED_MARKER",
+        "kind": 5,
+        "importPath": "nvidia_driver_setup.system.checks",
+        "description": "nvidia_driver_setup.system.checks",
+        "peekOfCode": "_ACKNOWLEDGED_MARKER = \"/var/lib/nvidia-setup/.acknowledged\"\ndef get_system_info():\n    \"\"\"Gather comprehensive system information\"\"\"\n    info = {\n        'os': {},\n        'kernel': None,\n        'gpu': {},\n        'capabilities': {\n            'vulkan_supported': False,\n            'nvenc_supported': False,",
         "detail": "nvidia_driver_setup.system.checks",
         "documentation": {}
     },
@@ -565,7 +626,7 @@
         "kind": 2,
         "importPath": "nvidia_driver_setup.utils.prompts",
         "description": "nvidia_driver_setup.utils.prompts",
-        "peekOfCode": "def prompt_multi_select(\n    prompt: str,\n    options: list[str],\n    descriptions: list[str],\n    statuses: list[str],\n    pre_selected: set[int] | None = None,\n    exit_label: str = \"Exit\",\n) -> list[int]:\n    \"\"\"Multi-select checkbox menu.\n    Shows numbered options with [*]/[ ] checkboxes. The user can toggle items",
+        "peekOfCode": "def prompt_multi_select(\n    prompt: str,\n    options: list[str],\n    descriptions: list[str],\n    statuses: list[str],\n    pre_selected: set[int] | None = None,\n    exit_label: str = \"Exit\",\n) -> list[int]:\n    \"\"\"Multi-select checkbox menu.\n    Uses curses for interactive arrow-key navigation when available,",
         "detail": "nvidia_driver_setup.utils.prompts",
         "documentation": {}
     },
@@ -745,7 +806,7 @@
         "kind": 2,
         "importPath": "nvidia_driver_setup.cli",
         "description": "nvidia_driver_setup.cli",
-        "peekOfCode": "def show_banner() -> None:\n    \"\"\"Display application banner.\"\"\"\n    banner = \"\"\"\n\\u2554\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2557\n\\u2551               NVIDIA Driver Setup - Python                  \\u2551\n\\u2551          Hardware Acceleration for Media Servers            \\u2551\n\\u255a\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u255d\n\"\"\"\n    print(banner)\ndef build_menu_options(",
+        "peekOfCode": "def show_banner() -> None:\n    \"\"\"Display application banner.\"\"\"\n    banner = \"\"\"\n\\u2554\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2557\n\\u2551               NVIDIA Driver Setup - Python                  \\u2551\n\\u2551          Hardware Acceleration for Media Servers            \\u2551\n\\u255a\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u255d\n\"\"\"\n    print(banner)\ndef _check_nvenc_patch_status() -> str:",
         "detail": "nvidia_driver_setup.cli",
         "documentation": {}
     },

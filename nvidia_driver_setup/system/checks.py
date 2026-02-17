@@ -1,11 +1,14 @@
 """System checks and validation"""
 
+import subprocess
 import sys
 import os
 import re
 from ..utils.logging import log_info, log_warn, log_error, log_step
-from ..utils.prompts import prompt_yes_no, prompt_acknowledge
+from ..utils.prompts import prompt_yes_no
 from ..utils.system import run_command, AptManager, cleanup_nvidia_repos, cleanup_old_nvidia_drivers, full_nvidia_cleanup, check_internet, get_os_info, check_nvidia_gpu
+
+_ACKNOWLEDGED_MARKER = "/var/lib/nvidia-setup/.acknowledged"
 
 
 def get_system_info():
@@ -181,44 +184,37 @@ def display_system_info(info):
 
 
 def run_preliminary_checks():
-    """Run all preliminary system checks"""
+    """Run all preliminary system checks.
+
+    Only performs fast, essential gates before showing the menu:
+    GPU present, OS version, dependencies, and internet.
+    Performance recommendations are shown once (marker file).
+    Cleanup/audit is available as a menu item.
+    """
     log_step("Running preliminary system checks...")
-    
-    _display_performance_recommendations()
+
+    _show_performance_note_once()
     _check_nvidia_gpu_present()
-    _offer_cleanup_option()
     _check_ubuntu_version()
     _install_dependencies()
     _check_internet_connectivity()
 
 
-def _display_performance_recommendations():
-    """Display NVIDIA performance recommendations"""
-    log_step("IMPORTANT: NVIDIA Performance Recommendations")
-    
-    recommendations = """
-For optimal NVIDIA GPU performance and reliability in Docker containers,
-the following kernel parameters are highly recommended:
+def _show_performance_note_once():
+    """Show NVIDIA performance recommendations once, then remember via marker file."""
+    if os.path.exists(_ACKNOWLEDGED_MARKER):
+        return
 
-pcie_port_pm=off                    - Disables PCIe power management for better performance
-pcie_aspm.policy=performance        - Sets PCIe power state policy to performance mode
+    log_info("Tip: For optimal GPU performance, add kernel parameters:")
+    log_info("  pcie_port_pm=off  pcie_aspm.policy=performance")
+    log_info("  (Add to GRUB_CMDLINE_LINUX_DEFAULT in /etc/default/grub, then update-grub)")
 
-IMPORTANT: If using GPU passthrough to a VM, these parameters should be
-added to the GRUB configuration on the BARE METAL HOST, not in the VM.
-
-To add these parameters to your GRUB configuration:
-1. Edit /etc/default/grub
-2. Add these parameters to GRUB_CMDLINE_LINUX_DEFAULT:
-   Example: GRUB_CMDLINE_LINUX_DEFAULT="quiet splash pcie_port_pm=off pcie_aspm.policy=performance"
-3. Run update-grub (or proxmox-boot-tool refresh on Proxmox)
-4. Reboot your system
-"""
-    
-    print(recommendations)
-    prompt_acknowledge(
-        "Please read the performance recommendations above carefully.",
-        "I understand"
-    )
+    try:
+        os.makedirs(os.path.dirname(_ACKNOWLEDGED_MARKER), exist_ok=True)
+        with open(_ACKNOWLEDGED_MARKER, "w") as fh:
+            fh.write("acknowledged\n")
+    except OSError:
+        pass  # Non-critical, will just show again next time
 
 
 def _check_nvidia_gpu_present():
@@ -226,8 +222,8 @@ def _check_nvidia_gpu_present():
     if not check_nvidia_gpu():
         log_error("No NVIDIA GPU detected! This script requires an NVIDIA GPU.")
         sys.exit(1)
-    
-    log_info("✓ NVIDIA GPU detected")
+
+    log_info("\u2713 NVIDIA GPU detected")
 
 
 def _offer_cleanup_option():
@@ -242,7 +238,7 @@ def _offer_cleanup_option():
                 full_nvidia_cleanup(dry_run=False)
                 cleanup_nvidia_repos()
         else:
-            log_info("System is clean — no old drivers or stale libraries found")
+            log_info("System is clean \u2014 no old drivers or stale libraries found")
             # Still offer to clean repos
             cleanup_nvidia_repos()
 
@@ -279,17 +275,30 @@ def _check_ubuntu_version():
 
 
 def _install_dependencies():
-    """Install required system dependencies"""
-    log_info("Installing required dependencies...")
-    
-    apt = AptManager()
+    """Install required system dependencies (skips if all present)."""
     dependencies = [
-        "curl", "gnupg", "lsb-release", "ca-certificates", 
-        "wget", "git", "python3-pip"
+        "curl", "gnupg", "lsb-release", "ca-certificates",
+        "wget", "git", "python3-pip",
     ]
-    
-    apt.install(*dependencies)
-    log_info("✓ Dependencies installed")
+
+    # Fast check: see if all packages are already installed
+    missing: list[str] = []
+    for pkg in dependencies:
+        result = run_command(f"dpkg -s {pkg} 2>/dev/null | grep -q 'Status: install ok installed'",
+                            capture_output=True, check=False)
+        # run_command returns output; for shell one-liners we check return code via the output
+        check = run_command(f"dpkg -s {pkg}", capture_output=True, check=False)
+        if not check or "install ok installed" not in check:
+            missing.append(pkg)
+
+    if not missing:
+        log_info("\u2713 All dependencies present")
+        return
+
+    log_info(f"Installing missing dependencies: {', '.join(missing)}")
+    apt = AptManager()
+    apt.install(*missing)
+    log_info("\u2713 Dependencies installed")
 
 
 def _check_internet_connectivity():
@@ -299,7 +308,7 @@ def _check_internet_connectivity():
         if not prompt_yes_no("Continue without internet?"):
             sys.exit(1)
     else:
-        log_info("✓ Internet connectivity verified")
+        log_info("\u2713 Internet connectivity verified")
 
 
 def detect_existing_installations():
@@ -347,13 +356,6 @@ def detect_existing_installations():
                 if 'nvidia' in content.lower():
                     installations['nvidia_runtime']['installed'] = True
                     installations['nvidia_runtime']['version'] = "Configured"
-
-        # Alternative check - try to run nvidia container
-        result = run_command("docker run --rm --gpus all nvidia/cuda:12.0-base echo 'test'",
-                           capture_output=True, check=False)
-        if result and "test" in result:
-            installations['nvidia_runtime']['installed'] = True
-            installations['nvidia_runtime']['version'] = "Working"
     except:
         pass
 
@@ -379,42 +381,42 @@ def detect_existing_installations():
 def check_gpu_capabilities():
     """Check GPU capabilities for media processing"""
     log_step("Checking GPU capabilities for media processing...")
-    
+
     try:
         # Get GPU model
         gpu_model = run_command(
-            "nvidia-smi --query-gpu=gpu_name --format=csv,noheader", 
+            "nvidia-smi --query-gpu=gpu_name --format=csv,noheader",
             capture_output=True
         )
         log_info(f"Detected GPU: {gpu_model}")
-        
+
         # Get compute capability
         compute_cap = run_command(
             "nvidia-smi --query-gpu=compute_cap --format=csv,noheader",
             capture_output=True
         )
         log_info(f"GPU Architecture: Compute {compute_cap}")
-        
+
         # Check NVENC/NVDEC support
         nvidia_info = run_command("nvidia-smi -q", capture_output=True)
-        
+
         if "Encoder" in nvidia_info:
-            log_info("✓ NVENC (GPU encoding) is supported")
-            log_info("  → Compatible with FFmpeg GPU acceleration")
-            log_info("  → Compatible with Plex GPU-accelerated encoding")
+            log_info("\u2713 NVENC (GPU encoding) is supported")
+            log_info("  \u2192 Compatible with FFmpeg GPU acceleration")
+            log_info("  \u2192 Compatible with Plex GPU-accelerated encoding")
         else:
-            log_warn("✗ NVENC not detected - GPU encoding may not be available")
-        
+            log_warn("\u2717 NVENC not detected - GPU encoding may not be available")
+
         if "Decoder" in nvidia_info:
-            log_info("✓ NVDEC (GPU decoding) is supported")
-            log_info("  → Compatible with FFmpeg GPU acceleration")
-            log_info("  → Compatible with Plex GPU-accelerated decoding")
+            log_info("\u2713 NVDEC (GPU decoding) is supported")
+            log_info("  \u2192 Compatible with FFmpeg GPU acceleration")
+            log_info("  \u2192 Compatible with Plex GPU-accelerated decoding")
         else:
-            log_warn("✗ NVDEC not detected - GPU decoding may not be available")
-        
+            log_warn("\u2717 NVDEC not detected - GPU decoding may not be available")
+
         # GPU model specific guidance
         _provide_gpu_guidance(gpu_model)
-        
+
     except Exception as e:
         log_warn(f"Cannot check GPU model - driver might not be loaded yet: {e}")
 
@@ -423,18 +425,18 @@ def _provide_gpu_guidance(gpu_model):
     """Provide guidance based on GPU model"""
     if not gpu_model:
         return
-    
+
     gpu_lower = gpu_model.lower()
-    
+
     if any(x in gpu_lower for x in ["rtx 40", "rtx 50"]):
-        log_info("✓ Modern GPU detected - excellent performance expected")
-        log_info("  → Full support for AV1, H.265/HEVC, H.264/AVC")
+        log_info("\u2713 Modern GPU detected - excellent performance expected")
+        log_info("  \u2192 Full support for AV1, H.265/HEVC, H.264/AVC")
     elif "rtx 30" in gpu_lower:
-        log_info("✓ Very good GPU model - well-supported")
-        log_info("  → Good support for H.265/HEVC, H.264/AVC")
+        log_info("\u2713 Very good GPU model - well-supported")
+        log_info("  \u2192 Good support for H.265/HEVC, H.264/AVC")
     elif any(x in gpu_lower for x in ["rtx 20", "gtx 16"]):
-        log_info("✓ Good GPU model - well-supported")
-        log_info("  → Supports H.265/HEVC, H.264/AVC")
+        log_info("\u2713 Good GPU model - well-supported")
+        log_info("  \u2192 Supports H.265/HEVC, H.264/AVC")
     else:
-        log_info("✓ GPU detected - compatibility may vary")
-        log_info("  → Check NVIDIA documentation for codec support")
+        log_info("\u2713 GPU detected - compatibility may vary")
+        log_info("  \u2192 Check NVIDIA documentation for codec support")

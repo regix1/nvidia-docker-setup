@@ -327,8 +327,12 @@ def prompt_multi_select(
             return _curses_multi_select(
                 prompt, options, descriptions, statuses, pre_selected, exit_label
             )
-        except Exception:
-            pass
+        except Exception as exc:
+            print(
+                f"\033[1;33m[WARN]  Interactive menu unavailable "
+                f"({type(exc).__name__}: {exc}), using text menu\033[0m",
+                file=sys.stderr,
+            )
 
     return _fallback_multi_select(
         prompt, options, descriptions, statuses, pre_selected, exit_label
