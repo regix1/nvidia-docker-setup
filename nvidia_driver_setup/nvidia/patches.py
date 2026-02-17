@@ -90,7 +90,7 @@ _ANCHORS: list[AnchorPattern] = [
         skip=2,
         patched_marker="feff29c04189c6",
         variants=[
-            PatchVariant("4189c685c00f85a6000000", "29c04189c690909090909090", "r14d+JNE"),
+            PatchVariant("4189c685c00f85a6000000", "29c04189c6909090909090", "r14d+JNE"),
             PatchVariant("4189c685c0",             "29c04189c6",               "r14d"),
         ],
     ),
