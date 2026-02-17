@@ -2,3 +2,7 @@ __pycache__/
 *.pyc
 .serena/
 .vscode/PythonImportHelper-v2-Completion.json
+
+# Claude
+CLAUDE.md
+.claude/
