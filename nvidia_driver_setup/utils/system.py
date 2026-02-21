@@ -1002,12 +1002,33 @@ def write_egl_icd_default() -> None:
     The Vulkan api_version is read from the driver-installed ICD at
     /usr/share/vulkan/icd.d/nvidia_icd.json so it stays in sync with
     the installed driver.  Falls back to a safe default if unreadable.
+
+    Creates /etc/vulkan/icd.d/ and the ICD file if they do not exist.
     """
     import json as _json
 
-    egl_lib = "/usr/lib/x86_64-linux-gnu/libEGL_nvidia.so.0"
-    if not os.path.exists(egl_lib):
-        log_warn("Could not write default EGL ICD: libEGL_nvidia.so.0 not found")
+    # Search multiple paths for the EGL library
+    egl_found = False
+    for lib_dir in _NVIDIA_LIB_DIRS:
+        candidate = os.path.join(lib_dir, "libEGL_nvidia.so.0")
+        if os.path.exists(candidate):
+            egl_found = True
+            break
+
+    # Also check via ldconfig if not found on disk
+    if not egl_found:
+        try:
+            result = subprocess.run(
+                "ldconfig -p | grep libEGL_nvidia.so.0",
+                shell=True, capture_output=True, text=True,
+            )
+            if result.returncode == 0 and "libEGL_nvidia" in result.stdout:
+                egl_found = True
+        except OSError:
+            pass
+
+    if not egl_found:
+        log_warn("Could not write default EGL ICD: libEGL_nvidia.so.0 not found on system")
         return
 
     # Read api_version from the driver-shipped ICD
@@ -1015,10 +1036,17 @@ def write_egl_icd_default() -> None:
     for src in [
         "/usr/share/vulkan/icd.d/nvidia_icd.json",
         "/usr/share/vulkan/icd.d/nvidia_icd.x86_64.json",
+        "/etc/vulkan/icd.d/nvidia_icd.json",
     ]:
         try:
             with open(src, "r") as fh:
                 data = _json.load(fh)
+            existing_lib = data.get("ICD", {}).get("library_path", "")
+            if existing_lib == "libEGL_nvidia.so.0":
+                ver = data.get("ICD", {}).get("api_version", "")
+                if re.match(r"^\d+\.\d+\.\d+", ver):
+                    log_info(f"Default NVIDIA EGL ICD already configured ({src}, api_version {ver})")
+                    return
             ver = data.get("ICD", {}).get("api_version", "")
             if re.match(r"^\d+\.\d+\.\d+", ver):
                 api_version = ver
@@ -1032,7 +1060,7 @@ def write_egl_icd_default() -> None:
         "{\n"
         '  "file_format_version": "1.0.1",\n'
         '  "ICD": {\n'
-        f'    "library_path": "libEGL_nvidia.so.0",\n'
+        '    "library_path": "libEGL_nvidia.so.0",\n'
         f'    "api_version": "{api_version}"\n'
         "  }\n"
         "}\n"
