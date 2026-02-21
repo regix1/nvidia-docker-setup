@@ -481,48 +481,63 @@ def _install_specific_driver(version: str) -> None:
 
 
 def _install_vulkan_support(apt: AptManager, major: str) -> None:
-    """Install Vulkan/OpenGL support packages for the NVIDIA driver.
+    """Install Vulkan/OpenGL support and verify critical libraries.
 
-    Installs libnvidia-gl (OpenGL/GLX), libnvidia-glvkspirv (Vulkan
-    SPIR-V compiler), and libnvidia-gpucomp (GPU compiler).  Without
-    glvkspirv and gpucomp, Vulkan initialization fails with
-    VK_ERROR_INITIALIZATION_FAILED — both on the host and in containers.
+    libnvidia-gl-{major} bundles all Vulkan libraries including
+    libnvidia-glvkspirv (SPIR-V compiler) and libnvidia-gpucomp
+    (GPU compiler).  Without these, Vulkan fails with
+    VK_ERROR_INITIALIZATION_FAILED.
 
-    Driver 590+ uses unversioned package names; older drivers use
-    versioned names (e.g. libnvidia-gl-580).  We try versioned first
-    and fall back to unversioned.
+    After installing, we verify the libraries exist and regenerate
+    the NVIDIA CDI spec so containers can access them.
     """
-    packages = [
-        ("libnvidia-gl", "Vulkan/OpenGL support"),
-        ("libnvidia-glvkspirv", "Vulkan SPIR-V compiler"),
-        ("libnvidia-gpucomp", "Vulkan GPU compiler"),
+    # libnvidia-gl bundles: GLX, EGL, Vulkan ICD, glvkspirv, gpucomp
+    gl_package = f"libnvidia-gl-{major}"
+    log_info(f"Installing Vulkan/OpenGL support: {gl_package}")
+    try:
+        apt.install(gl_package)
+        log_info(f"Successfully installed {gl_package}")
+    except Exception:
+        log_warn(f"Could not install {gl_package} - Vulkan may not work properly")
+
+    # Verify critical Vulkan libraries are present
+    vulkan_libs = [
+        ("libnvidia-glvkspirv.so", "Vulkan SPIR-V compiler"),
+        ("libnvidia-gpucomp.so", "Vulkan GPU compiler"),
     ]
+    lib_dir = "/usr/lib/x86_64-linux-gnu"
+    for lib_name, description in vulkan_libs:
+        found = any(
+            f.startswith(lib_name) for f in os.listdir(lib_dir)
+        ) if os.path.isdir(lib_dir) else False
+        if found:
+            log_info(f"  {description}: found")
+        else:
+            log_warn(f"  {description}: NOT found — Vulkan may not work")
+            log_warn(f"    Expected {lib_name}* in {lib_dir}")
 
-    for base_name, description in packages:
-        versioned = f"{base_name}-{major}"
-        installed = False
+    # Regenerate CDI spec so containers pick up the Vulkan libraries
+    _regenerate_cdi_spec()
 
-        # Try versioned name first (e.g. libnvidia-gl-580)
-        try:
-            apt.install(versioned)
-            log_info(f"Installed {versioned} ({description})")
-            installed = True
-        except Exception:
-            pass
 
-        # Fall back to unversioned name (590+ new packaging)
-        if not installed:
-            try:
-                apt.install(base_name)
-                log_info(f"Installed {base_name} ({description})")
-                installed = True
-            except Exception:
-                pass
+def _regenerate_cdi_spec() -> None:
+    """Regenerate the NVIDIA CDI spec if nvidia-ctk is available.
 
-        if not installed:
-            log_warn(f"Could not install {base_name} ({description})")
-            if "glvkspirv" in base_name or "gpucomp" in base_name:
-                log_warn("  Vulkan may not work without this package")
+    This ensures the container toolkit maps all driver libraries
+    (including Vulkan) into containers.
+    """
+    try:
+        run_command("nvidia-ctk --version", capture_output=True, check=True)
+    except Exception:
+        return  # nvidia-ctk not installed, nothing to do
+
+    log_info("Regenerating NVIDIA CDI spec for container Vulkan support...")
+    try:
+        run_command("nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml")
+        log_info("CDI spec regenerated successfully")
+    except Exception as exc:
+        log_warn(f"Could not regenerate CDI spec: {exc}")
+        log_info("Run manually: nvidia-ctk cdi generate --output=/etc/cdi/nvidia.yaml")
 
 
 def _post_install_library_cleanup() -> None:
