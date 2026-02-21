@@ -18,7 +18,7 @@ from typing import Optional
 
 from ..utils.logging import log_info, log_warn, log_error, log_step, log_success
 from ..utils.prompts import prompt_yes_no, prompt_choice, prompt_input
-from ..utils.system import run_command, AptManager
+from ..utils.system import run_command, AptManager, write_egl_icd_default
 
 # LunarG API endpoints
 _LUNARG_VERSIONS_URL = "https://vulkan.lunarg.com/sdk/versions/linux.json"
@@ -558,6 +558,9 @@ def install_vulkan_sdk() -> None:
 
     # Configure environment
     _configure_environment()
+
+    # Ensure the default NVIDIA Vulkan ICD uses EGL for container compatibility
+    write_egl_icd_default()
 
     # Verify and display info
     _verify_vulkan_sdk()
