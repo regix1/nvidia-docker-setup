@@ -1,33 +1,53 @@
-"""Vulkan SDK installation via LunarG APT repository.
+"""Vulkan SDK installation via LunarG tarball.
 
 Installs the LunarG Vulkan SDK on the host for development
 (validation layers, SPIR-V tools, headers, vulkaninfo).
 
-Fetches available versions from the LunarG API (like CUDA does
-from Docker Hub), with offline fallback to configs/vulkan_versions.json.
+Fetches available versions from the LunarG API, downloads the
+official tarball, and configures the environment.  APT-based
+installation was deprecated by LunarG in May 2025.
 """
 
 import json
 import os
+import platform
 import re
+import shutil
 import urllib.request
 from typing import Optional
 
 from ..utils.logging import log_info, log_warn, log_error, log_step, log_success
 from ..utils.prompts import prompt_yes_no, prompt_choice, prompt_input
-from ..utils.system import run_command, AptManager, get_os_info
+from ..utils.system import run_command, AptManager
 
+# LunarG API endpoints
 _LUNARG_VERSIONS_URL = "https://vulkan.lunarg.com/sdk/versions/linux.json"
 _LUNARG_LATEST_URL = "https://vulkan.lunarg.com/sdk/latest/linux.json"
-_LUNARG_TIMEOUT = 15  # seconds
+_LUNARG_TIMEOUT = 15
 
-# APT repo base URL -- repo directories use 3-part versions (e.g. 1.4.309)
-_LUNARG_PACKAGES_BASE = "https://packages.lunarg.com/vulkan"
+# Tarball download endpoints
+_LUNARG_DOWNLOAD_BASE = "https://sdk.lunarg.com/sdk/download"
+_LUNARG_SHA_BASE = "https://sdk.lunarg.com/sdk/sha"
+
+# Installation paths
+_VULKAN_SDK_BASE = "/opt/vulkan-sdk"
+_VULKAN_PROFILE_SCRIPT = "/etc/profile.d/vulkan-sdk.sh"
+_DOWNLOAD_PATH = "/tmp/vulkan_sdk.tar.xz"
 
 
 # ---------------------------------------------------------------------------
 # Detection
 # ---------------------------------------------------------------------------
+
+def _get_arch() -> str:
+    """Return the platform subdirectory used inside the SDK tarball."""
+    machine = platform.machine()
+    if machine in ("x86_64", "AMD64", "x86-64"):
+        return "x86_64"
+    if machine in ("aarch64", "arm64"):
+        return "aarch64"
+    return machine
+
 
 def _detect_vulkan_sdk() -> Optional[str]:
     """Check if the Vulkan SDK is already installed.
@@ -35,14 +55,38 @@ def _detect_vulkan_sdk() -> Optional[str]:
     Returns:
         Version string if installed, None otherwise.
     """
-    # Try dpkg first (most reliable for APT installs)
+    # Check tarball install (current symlink)
+    current_link = os.path.join(_VULKAN_SDK_BASE, "current")
+    if os.path.islink(current_link):
+        target = os.readlink(current_link)
+        name = os.path.basename(target)
+        if re.match(r"\d+\.\d+\.\d+", name):
+            return name
+
+    # Check for any version directory in the install base
+    if os.path.isdir(_VULKAN_SDK_BASE):
+        try:
+            dirs = [
+                e.name for e in os.scandir(_VULKAN_SDK_BASE)
+                if e.is_dir() and re.match(r"\d+\.\d+\.\d+", e.name)
+            ]
+            if dirs:
+                dirs.sort(
+                    key=lambda v: [int(x) for x in v.split(".")[:3]],
+                    reverse=True,
+                )
+                return dirs[0]
+        except OSError:
+            pass
+
+    # Legacy: dpkg APT install
     try:
         output = run_command(
             "dpkg -s vulkan-sdk 2>/dev/null | grep '^Version:'",
             capture_output=True, check=False,
         )
         if output and "Version:" in output:
-            return output.split("Version:")[1].strip()
+            return output.split("Version:")[1].strip() + " (APT - deprecated)"
     except Exception:
         pass
 
@@ -60,24 +104,6 @@ def _detect_vulkan_sdk() -> Optional[str]:
 # ---------------------------------------------------------------------------
 # Version helpers
 # ---------------------------------------------------------------------------
-
-def _to_apt_version(version: str) -> str:
-    """Convert a 4-part API version to the 3-part APT repo version.
-
-    The LunarG API returns versions like '1.4.309.0' but the APT
-    repository directories use '1.4.309' (3 parts).
-
-    Args:
-        version: Version string from the API (e.g. "1.4.309.0").
-
-    Returns:
-        3-part version string (e.g. "1.4.309").
-    """
-    parts = version.split(".")
-    if len(parts) >= 3:
-        return ".".join(parts[:3])
-    return version
-
 
 def _classify_vulkan_version(version: str) -> str:
     """Return a short description tag based on the Vulkan version family."""
@@ -114,7 +140,6 @@ def _get_vulkan_sdk_versions() -> Optional[list[str]]:
         data = json.loads(resp.read())
 
         if isinstance(data, list) and data:
-            # API returns versions newest-first already
             return [str(v) for v in data]
         return None
     except Exception as exc:
@@ -124,8 +149,6 @@ def _get_vulkan_sdk_versions() -> Optional[list[str]]:
 
 def _get_latest_vulkan_sdk_version() -> Optional[str]:
     """Query the LunarG API for the latest Vulkan SDK version.
-
-    The API returns ``{"linux": "1.4.341.1"}``.
 
     Returns:
         Latest version string, or None on failure.
@@ -138,9 +161,8 @@ def _get_latest_vulkan_sdk_version() -> Optional[str]:
         resp = urllib.request.urlopen(req, timeout=_LUNARG_TIMEOUT)
         data = json.loads(resp.read())
 
-        # Response is {"linux": "x.y.z.w"}
         if isinstance(data, dict):
-            return str(data.get("linux") or data.get("version") or "")  or None
+            return str(data.get("linux") or data.get("version") or "") or None
         if isinstance(data, str):
             return data
         if isinstance(data, list) and data:
@@ -162,90 +184,207 @@ def _load_fallback_versions() -> dict[str, str]:
             return json.load(fh)
     except (FileNotFoundError, json.JSONDecodeError):
         return {
-            "1.4.313.0": "Latest APT - Vulkan 1.4",
+            "1.4.341.1": "Latest - Vulkan 1.4",
+            "1.4.313.0": "Stable - Vulkan 1.4",
             "1.3.296.0": "Stable - Vulkan 1.3",
             "1.3.283.0": "Previous stable",
-            "1.3.268.0": "Legacy stable",
         }
 
 
-def _check_apt_repo_exists(apt_version: str, codename: str) -> bool:
-    """Probe whether the LunarG APT list file exists for a given version.
+# ---------------------------------------------------------------------------
+# Download and verification
+# ---------------------------------------------------------------------------
+
+def _download_tarball(version: str) -> bool:
+    """Download the Vulkan SDK tarball.
 
     Args:
-        apt_version: 3-part version (e.g. "1.4.309").
-        codename: Ubuntu codename (e.g. "jammy").
+        version: SDK version string (e.g. "1.4.341.0").
 
     Returns:
-        True if the repo list URL is reachable.
+        True on success.
     """
-    url = (
-        f"{_LUNARG_PACKAGES_BASE}/{apt_version}/"
-        f"lunarg-vulkan-{apt_version}-{codename}.list"
-    )
+    url = f"{_LUNARG_DOWNLOAD_BASE}/{version}/linux/vulkan_sdk.tar.xz?Human=true"
+    log_info(f"Downloading Vulkan SDK {version} tarball...")
     try:
-        req = urllib.request.Request(url, method="HEAD",
-                                     headers={"User-Agent": "nvidia-driver-setup/1.0"})
-        urllib.request.urlopen(req, timeout=10)
+        run_command(f"wget -O {_DOWNLOAD_PATH} '{url}'")
         return True
-    except Exception:
+    except Exception as exc:
+        log_error(f"Download failed: {exc}")
         return False
 
 
-# ---------------------------------------------------------------------------
-# Repository setup
-# ---------------------------------------------------------------------------
-
-def _setup_lunarg_repository(apt_version: str, codename: str) -> None:
-    """Add the LunarG APT signing key and repository.
+def _verify_sha256(version: str) -> bool:
+    """Verify SHA256 checksum of the downloaded tarball.
 
     Args:
-        apt_version: 3-part Vulkan SDK version (e.g. "1.4.309").
-        codename: Ubuntu codename (e.g. "jammy", "noble").
+        version: SDK version used to look up the expected hash.
+
+    Returns:
+        True if checksum matches or verification was skipped.
     """
-    log_info("Adding LunarG signing key...")
-    run_command(
-        "wget -qO- https://packages.lunarg.com/lunarg-signing-key-pub.asc "
-        "| tee /etc/apt/trusted.gpg.d/lunarg.asc > /dev/null"
-    )
+    sha_url = f"{_LUNARG_SHA_BASE}/{version}/linux/vulkan_sdk.tar.xz.txt"
+    try:
+        req = urllib.request.Request(
+            sha_url,
+            headers={"User-Agent": "nvidia-driver-setup/1.0"},
+        )
+        resp = urllib.request.urlopen(req, timeout=_LUNARG_TIMEOUT)
+        expected = resp.read().decode().strip().split()[0]
 
-    log_info(f"Adding LunarG Vulkan SDK {apt_version} repository for {codename}...")
-    list_url = (
-        f"{_LUNARG_PACKAGES_BASE}/{apt_version}/"
-        f"lunarg-vulkan-{apt_version}-{codename}.list"
-    )
-    list_dest = f"/etc/apt/sources.list.d/lunarg-vulkan-{apt_version}.list"
-    run_command(f"wget -qO {list_dest} {list_url}")
-
-    # Force apt to re-read sources
-    AptManager.reset_cache()
+        log_info("Verifying SHA256 checksum...")
+        output = run_command(
+            f"sha256sum {_DOWNLOAD_PATH}",
+            capture_output=True, check=False,
+        )
+        if output:
+            actual = output.strip().split()[0]
+            if actual == expected:
+                log_success("SHA256 checksum verified")
+                return True
+            log_error(
+                f"SHA256 mismatch! Expected: {expected[:16]}... "
+                f"Got: {actual[:16]}..."
+            )
+            return False
+        log_warn("sha256sum not available, skipping verification")
+        return True
+    except Exception as exc:
+        log_warn(f"Could not verify checksum (continuing): {exc}")
+        return True
 
 
 # ---------------------------------------------------------------------------
 # Installation
 # ---------------------------------------------------------------------------
 
-def _install_vulkan_sdk_packages() -> None:
-    """Install the full Vulkan SDK meta-package."""
+def _install_runtime_deps() -> None:
+    """Install system packages required by SDK tools (vkcube, etc.)."""
+    deps = ["libxcb-xinput0", "libxcb-xinerama0", "libxcb-cursor0"]
+    log_info("Installing runtime dependencies...")
     apt = AptManager()
-    log_info("Installing Vulkan SDK packages...")
-    apt.install("vulkan-sdk")
+    try:
+        apt.install(*deps)
+    except Exception as exc:
+        log_warn(f"Some runtime dependencies could not be installed: {exc}")
+        log_info("SDK tools like vkcube may not work without them.")
 
+
+def _extract_tarball(version: str) -> bool:
+    """Extract the SDK tarball to the install location.
+
+    The tarball contains a top-level directory named after the version
+    (e.g. ``1.4.341.0/``).  We extract into ``_VULKAN_SDK_BASE`` so
+    the result is ``/opt/vulkan-sdk/1.4.341.0/``.
+
+    Args:
+        version: Expected version directory name.
+
+    Returns:
+        True if extraction succeeded.
+    """
+    install_dir = os.path.join(_VULKAN_SDK_BASE, version)
+
+    os.makedirs(_VULKAN_SDK_BASE, exist_ok=True)
+
+    # Remove previous install of the same version
+    if os.path.isdir(install_dir):
+        log_info(f"Removing previous install at {install_dir}...")
+        shutil.rmtree(install_dir)
+
+    log_info(f"Extracting to {_VULKAN_SDK_BASE}/...")
+    try:
+        run_command(f"tar xf {_DOWNLOAD_PATH} -C {_VULKAN_SDK_BASE}")
+    except Exception as exc:
+        log_error(f"Extraction failed: {exc}")
+        return False
+
+    if os.path.isdir(install_dir):
+        log_success(f"Extracted to {install_dir}")
+        return True
+
+    log_error(f"Expected directory {install_dir} not found after extraction")
+    return False
+
+
+def _create_current_symlink(version: str) -> None:
+    """Create or update the ``current`` symlink in the install base."""
+    current_link = os.path.join(_VULKAN_SDK_BASE, "current")
+    version_dir = os.path.join(_VULKAN_SDK_BASE, version)
+
+    try:
+        if os.path.islink(current_link):
+            os.remove(current_link)
+        elif os.path.exists(current_link):
+            os.remove(current_link)
+        os.symlink(version_dir, current_link)
+        log_info(f"Symlink: {current_link} -> {version_dir}")
+    except OSError as exc:
+        log_warn(f"Could not create symlink: {exc}")
+
+
+# ---------------------------------------------------------------------------
+# Environment configuration
+# ---------------------------------------------------------------------------
+
+def _configure_environment() -> None:
+    """Write a profile.d script so the Vulkan SDK is on PATH for all users."""
+    arch = _get_arch()
+    script_content = (
+        '# Vulkan SDK environment (managed by nvidia-driver-setup)\n'
+        f'_VULKAN_SDK_DIR="{_VULKAN_SDK_BASE}/current/{arch}"\n'
+        'if [ -d "$_VULKAN_SDK_DIR" ]; then\n'
+        '    export VULKAN_SDK="$_VULKAN_SDK_DIR"\n'
+        '    export PATH="$VULKAN_SDK/bin${PATH:+:$PATH}"\n'
+        '    export LD_LIBRARY_PATH="$VULKAN_SDK/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"\n'
+        '    export VK_ADD_LAYER_PATH="$VULKAN_SDK/share/vulkan/explicit_layer.d"\n'
+        '    unset VK_LAYER_PATH\n'
+        'fi\n'
+    )
+
+    log_info(f"Writing Vulkan SDK environment script to {_VULKAN_PROFILE_SCRIPT}...")
+    try:
+        with open(_VULKAN_PROFILE_SCRIPT, "w") as fh:
+            fh.write(script_content)
+        os.chmod(_VULKAN_PROFILE_SCRIPT, 0o644)
+        log_success("Vulkan SDK environment configured (effective on next login)")
+    except OSError as exc:
+        log_warn(f"Could not write {_VULKAN_PROFILE_SCRIPT}: {exc}")
+        log_info(f"You can manually source: {_VULKAN_SDK_BASE}/current/setup-env.sh")
+
+
+# ---------------------------------------------------------------------------
+# Verification
+# ---------------------------------------------------------------------------
 
 def _verify_vulkan_sdk() -> bool:
-    """Verify the Vulkan SDK installation by running vulkaninfo.
+    """Verify the Vulkan SDK installation by checking key binaries.
 
     Returns:
         True if verification passed.
     """
     log_info("Verifying Vulkan SDK installation...")
 
-    output = run_command("vulkaninfo --summary 2>&1", capture_output=True, check=False)
+    arch = _get_arch()
+    sdk_bin = os.path.join(_VULKAN_SDK_BASE, "current", arch, "bin")
+
+    for tool in ("vulkaninfo", "glslangValidator", "spirv-val"):
+        tool_path = os.path.join(sdk_bin, tool)
+        if os.path.isfile(tool_path):
+            log_success(f"  {tool} found")
+        else:
+            log_warn(f"  {tool} not found at {tool_path}")
+
+    # Try running vulkaninfo
+    output = run_command(
+        f"bash -c 'source {_VULKAN_PROFILE_SCRIPT} 2>/dev/null; "
+        f"vulkaninfo --summary' 2>&1",
+        capture_output=True, check=False,
+    )
     if output and ("Vulkan Instance Version" in output or "apiVersion" in output):
         log_success("vulkaninfo reports Vulkan is working")
         return True
 
-    # SDK installed but vulkaninfo may need a GPU driver
     log_warn("vulkaninfo could not verify a Vulkan device (driver may need a reboot)")
     return False
 
@@ -263,8 +402,10 @@ def _show_vulkan_sdk_info(version: str) -> None:
     log_info("  - glslangValidator (GLSL to SPIR-V compiler)")
     log_info("  - Layer configuration utilities")
     print()
-    log_info("Quick test:  vulkaninfo --summary")
-    log_info("Cube demo:   vkcube")
+    log_info(f"Install path:  {_VULKAN_SDK_BASE}/{version}")
+    log_info("Quick test:    vulkaninfo --summary")
+    log_info("Cube demo:     vkcube")
+    log_info(f"Note: Open a new shell or run 'source {_VULKAN_PROFILE_SCRIPT}' to use SDK tools")
 
 
 # ---------------------------------------------------------------------------
@@ -277,22 +418,20 @@ def install_vulkan_sdk() -> None:
     Main entry point called from the CLI menu.
     """
     log_step("Vulkan SDK Installation")
+    log_info("This installs the LunarG Vulkan SDK via official tarball.")
+    log_info("(APT packages were deprecated by LunarG in May 2025)\n")
 
     # Check if already installed
     existing = _detect_vulkan_sdk()
     if existing:
         log_info(f"Vulkan SDK is already installed (version: {existing})")
+        if "(APT" in existing:
+            log_warn("The existing APT install is deprecated. "
+                     "The new install uses the official tarball.")
+            log_info("You can remove the old APT package later with: "
+                     "apt remove vulkan-sdk")
         if not prompt_yes_no("Reinstall / update Vulkan SDK?"):
             return
-
-    # Get OS codename for the repository URL
-    os_info = get_os_info()
-    codename = os_info.get("UBUNTU_CODENAME") or os_info.get("VERSION_CODENAME", "")
-    if not codename:
-        log_error("Could not determine OS codename. Cannot set up LunarG repository.")
-        return
-
-    log_info(f"Detected OS codename: {codename}")
 
     # Fetch available versions from LunarG API
     log_info("Fetching available Vulkan SDK versions...")
@@ -302,7 +441,6 @@ def install_vulkan_sdk() -> None:
     if live_versions:
         log_info(f"Found {len(live_versions)} versions from LunarG API.")
 
-        # Build display list with classification
         display_versions = live_versions[:15]
         choices: list[str] = []
         version_list: list[str] = []
@@ -314,7 +452,6 @@ def install_vulkan_sdk() -> None:
             choices.append(f"{ver} - {tag}{latest_tag}{recommended}")
             version_list.append(ver)
 
-        # Add custom version option (like CUDA does)
         choices.append("Enter custom version")
     else:
         log_warn("Could not fetch live versions, using offline list.")
@@ -340,7 +477,7 @@ def install_vulkan_sdk() -> None:
     )
 
     if choice_idx == len(choices) - 1:  # Custom version option
-        selected_version = prompt_input("Enter Vulkan SDK version (e.g., 1.4.309.0)")
+        selected_version = prompt_input("Enter Vulkan SDK version (e.g., 1.4.341.0)")
         if not selected_version:
             log_info("No version entered, cancelled.")
             return
@@ -349,35 +486,45 @@ def install_vulkan_sdk() -> None:
 
     log_info(f"Selected Vulkan SDK version: {selected_version}")
 
-    # Convert to the 3-part version used by APT repos
-    apt_version = _to_apt_version(selected_version)
-    log_info(f"APT repository version: {apt_version}")
-
-    # Check if the APT repo actually exists for this version/codename
-    log_info(f"Checking if APT repository exists for {apt_version}/{codename}...")
-    if not _check_apt_repo_exists(apt_version, codename):
-        log_warn(
-            f"No APT repository found for Vulkan SDK {apt_version} on {codename}. "
-            f"Not all SDK versions have APT packages (newer versions may require "
-            f"the tarball installer from vulkan.lunarg.com)."
-        )
-        if not prompt_yes_no("Try anyway?"):
+    # Download, verify, extract
+    try:
+        if not _download_tarball(selected_version):
+            log_info("You can manually download from: "
+                     "https://vulkan.lunarg.com/sdk/home")
             return
 
-    # Set up repository and install (with error handling)
-    try:
-        _setup_lunarg_repository(apt_version, codename)
-        _install_vulkan_sdk_packages()
+        # Verify checksum
+        if not _verify_sha256(selected_version):
+            if not prompt_yes_no("SHA256 verification failed. Continue anyway?"):
+                try:
+                    os.unlink(_DOWNLOAD_PATH)
+                except OSError:
+                    pass
+                return
+
+        # Install runtime dependencies
+        _install_runtime_deps()
+
+        # Extract tarball
+        if not _extract_tarball(selected_version):
+            return
     except Exception as exc:
-        log_error(f"Vulkan SDK installation failed: {exc}")
-        log_info("Check your internet connection and verify the selected version is "
-                 f"available for {codename}.")
-        log_info(f"You can also try installing manually from https://vulkan.lunarg.com/sdk/home")
+        log_error(f"Installation failed: {exc}")
+        log_info("Check your internet connection and try again.")
         return
+    finally:
+        # Always clean up the downloaded tarball
+        try:
+            os.unlink(_DOWNLOAD_PATH)
+        except OSError:
+            pass
+
+    # Create current symlink
+    _create_current_symlink(selected_version)
+
+    # Configure environment
+    _configure_environment()
 
     # Verify and display info
-    if _verify_vulkan_sdk():
-        _show_vulkan_sdk_info(selected_version)
-    else:
-        log_info(f"Vulkan SDK {selected_version} packages installed (verification "
-                 f"requires a GPU driver and may need a reboot).")
+    _verify_vulkan_sdk()
+    _show_vulkan_sdk_info(selected_version)

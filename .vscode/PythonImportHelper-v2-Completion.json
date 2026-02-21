@@ -120,6 +120,15 @@
         "documentation": {}
     },
     {
+        "label": "platform",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "platform",
+        "description": "platform",
+        "detail": "platform",
+        "documentation": {}
+    },
+    {
         "label": "sys",
         "kind": 6,
         "isExtraImport": true,
@@ -523,7 +532,7 @@
         "kind": 2,
         "importPath": "nvidia_driver_setup.nvidia.vulkan",
         "description": "nvidia_driver_setup.nvidia.vulkan",
-        "peekOfCode": "def install_vulkan_sdk() -> None:\n    \"\"\"Install the LunarG Vulkan SDK on the host.\n    Main entry point called from the CLI menu.\n    \"\"\"\n    log_step(\"Vulkan SDK Installation\")\n    # Check if already installed\n    existing = _detect_vulkan_sdk()\n    if existing:\n        log_info(f\"Vulkan SDK is already installed (version: {existing})\")\n        if not prompt_yes_no(\"Reinstall / update Vulkan SDK?\"):",
+        "peekOfCode": "def install_vulkan_sdk() -> None:\n    \"\"\"Install the LunarG Vulkan SDK on the host.\n    Main entry point called from the CLI menu.\n    \"\"\"\n    log_step(\"Vulkan SDK Installation\")\n    log_info(\"This installs the LunarG Vulkan SDK via official tarball.\")\n    log_info(\"(APT packages were deprecated by LunarG in May 2025)\\n\")\n    # Check if already installed\n    existing = _detect_vulkan_sdk()\n    if existing:",
         "detail": "nvidia_driver_setup.nvidia.vulkan",
         "documentation": {}
     },
@@ -532,7 +541,7 @@
         "kind": 5,
         "importPath": "nvidia_driver_setup.nvidia.vulkan",
         "description": "nvidia_driver_setup.nvidia.vulkan",
-        "peekOfCode": "_LUNARG_VERSIONS_URL = \"https://vulkan.lunarg.com/sdk/versions/linux.json\"\n_LUNARG_LATEST_URL = \"https://vulkan.lunarg.com/sdk/latest/linux.json\"\n_LUNARG_TIMEOUT = 15  # seconds\n# APT repo base URL -- repo directories use 3-part versions (e.g. 1.4.309)\n_LUNARG_PACKAGES_BASE = \"https://packages.lunarg.com/vulkan\"\n# ---------------------------------------------------------------------------\n# Detection\n# ---------------------------------------------------------------------------\ndef _detect_vulkan_sdk() -> Optional[str]:\n    \"\"\"Check if the Vulkan SDK is already installed.",
+        "peekOfCode": "_LUNARG_VERSIONS_URL = \"https://vulkan.lunarg.com/sdk/versions/linux.json\"\n_LUNARG_LATEST_URL = \"https://vulkan.lunarg.com/sdk/latest/linux.json\"\n_LUNARG_TIMEOUT = 15\n# Tarball download endpoints\n_LUNARG_DOWNLOAD_BASE = \"https://sdk.lunarg.com/sdk/download\"\n_LUNARG_SHA_BASE = \"https://sdk.lunarg.com/sdk/sha\"\n# Installation paths\n_VULKAN_SDK_BASE = \"/opt/vulkan-sdk\"\n_VULKAN_PROFILE_SCRIPT = \"/etc/profile.d/vulkan-sdk.sh\"\n_DOWNLOAD_PATH = \"/tmp/vulkan_sdk.tar.xz\"",
         "detail": "nvidia_driver_setup.nvidia.vulkan",
         "documentation": {}
     },
@@ -541,7 +550,7 @@
         "kind": 5,
         "importPath": "nvidia_driver_setup.nvidia.vulkan",
         "description": "nvidia_driver_setup.nvidia.vulkan",
-        "peekOfCode": "_LUNARG_LATEST_URL = \"https://vulkan.lunarg.com/sdk/latest/linux.json\"\n_LUNARG_TIMEOUT = 15  # seconds\n# APT repo base URL -- repo directories use 3-part versions (e.g. 1.4.309)\n_LUNARG_PACKAGES_BASE = \"https://packages.lunarg.com/vulkan\"\n# ---------------------------------------------------------------------------\n# Detection\n# ---------------------------------------------------------------------------\ndef _detect_vulkan_sdk() -> Optional[str]:\n    \"\"\"Check if the Vulkan SDK is already installed.\n    Returns:",
+        "peekOfCode": "_LUNARG_LATEST_URL = \"https://vulkan.lunarg.com/sdk/latest/linux.json\"\n_LUNARG_TIMEOUT = 15\n# Tarball download endpoints\n_LUNARG_DOWNLOAD_BASE = \"https://sdk.lunarg.com/sdk/download\"\n_LUNARG_SHA_BASE = \"https://sdk.lunarg.com/sdk/sha\"\n# Installation paths\n_VULKAN_SDK_BASE = \"/opt/vulkan-sdk\"\n_VULKAN_PROFILE_SCRIPT = \"/etc/profile.d/vulkan-sdk.sh\"\n_DOWNLOAD_PATH = \"/tmp/vulkan_sdk.tar.xz\"\n# ---------------------------------------------------------------------------",
         "detail": "nvidia_driver_setup.nvidia.vulkan",
         "documentation": {}
     },
@@ -550,16 +559,52 @@
         "kind": 5,
         "importPath": "nvidia_driver_setup.nvidia.vulkan",
         "description": "nvidia_driver_setup.nvidia.vulkan",
-        "peekOfCode": "_LUNARG_TIMEOUT = 15  # seconds\n# APT repo base URL -- repo directories use 3-part versions (e.g. 1.4.309)\n_LUNARG_PACKAGES_BASE = \"https://packages.lunarg.com/vulkan\"\n# ---------------------------------------------------------------------------\n# Detection\n# ---------------------------------------------------------------------------\ndef _detect_vulkan_sdk() -> Optional[str]:\n    \"\"\"Check if the Vulkan SDK is already installed.\n    Returns:\n        Version string if installed, None otherwise.",
+        "peekOfCode": "_LUNARG_TIMEOUT = 15\n# Tarball download endpoints\n_LUNARG_DOWNLOAD_BASE = \"https://sdk.lunarg.com/sdk/download\"\n_LUNARG_SHA_BASE = \"https://sdk.lunarg.com/sdk/sha\"\n# Installation paths\n_VULKAN_SDK_BASE = \"/opt/vulkan-sdk\"\n_VULKAN_PROFILE_SCRIPT = \"/etc/profile.d/vulkan-sdk.sh\"\n_DOWNLOAD_PATH = \"/tmp/vulkan_sdk.tar.xz\"\n# ---------------------------------------------------------------------------\n# Detection",
         "detail": "nvidia_driver_setup.nvidia.vulkan",
         "documentation": {}
     },
     {
-        "label": "_LUNARG_PACKAGES_BASE",
+        "label": "_LUNARG_DOWNLOAD_BASE",
         "kind": 5,
         "importPath": "nvidia_driver_setup.nvidia.vulkan",
         "description": "nvidia_driver_setup.nvidia.vulkan",
-        "peekOfCode": "_LUNARG_PACKAGES_BASE = \"https://packages.lunarg.com/vulkan\"\n# ---------------------------------------------------------------------------\n# Detection\n# ---------------------------------------------------------------------------\ndef _detect_vulkan_sdk() -> Optional[str]:\n    \"\"\"Check if the Vulkan SDK is already installed.\n    Returns:\n        Version string if installed, None otherwise.\n    \"\"\"\n    # Try dpkg first (most reliable for APT installs)",
+        "peekOfCode": "_LUNARG_DOWNLOAD_BASE = \"https://sdk.lunarg.com/sdk/download\"\n_LUNARG_SHA_BASE = \"https://sdk.lunarg.com/sdk/sha\"\n# Installation paths\n_VULKAN_SDK_BASE = \"/opt/vulkan-sdk\"\n_VULKAN_PROFILE_SCRIPT = \"/etc/profile.d/vulkan-sdk.sh\"\n_DOWNLOAD_PATH = \"/tmp/vulkan_sdk.tar.xz\"\n# ---------------------------------------------------------------------------\n# Detection\n# ---------------------------------------------------------------------------\ndef _get_arch() -> str:",
+        "detail": "nvidia_driver_setup.nvidia.vulkan",
+        "documentation": {}
+    },
+    {
+        "label": "_LUNARG_SHA_BASE",
+        "kind": 5,
+        "importPath": "nvidia_driver_setup.nvidia.vulkan",
+        "description": "nvidia_driver_setup.nvidia.vulkan",
+        "peekOfCode": "_LUNARG_SHA_BASE = \"https://sdk.lunarg.com/sdk/sha\"\n# Installation paths\n_VULKAN_SDK_BASE = \"/opt/vulkan-sdk\"\n_VULKAN_PROFILE_SCRIPT = \"/etc/profile.d/vulkan-sdk.sh\"\n_DOWNLOAD_PATH = \"/tmp/vulkan_sdk.tar.xz\"\n# ---------------------------------------------------------------------------\n# Detection\n# ---------------------------------------------------------------------------\ndef _get_arch() -> str:\n    \"\"\"Return the platform subdirectory used inside the SDK tarball.\"\"\"",
+        "detail": "nvidia_driver_setup.nvidia.vulkan",
+        "documentation": {}
+    },
+    {
+        "label": "_VULKAN_SDK_BASE",
+        "kind": 5,
+        "importPath": "nvidia_driver_setup.nvidia.vulkan",
+        "description": "nvidia_driver_setup.nvidia.vulkan",
+        "peekOfCode": "_VULKAN_SDK_BASE = \"/opt/vulkan-sdk\"\n_VULKAN_PROFILE_SCRIPT = \"/etc/profile.d/vulkan-sdk.sh\"\n_DOWNLOAD_PATH = \"/tmp/vulkan_sdk.tar.xz\"\n# ---------------------------------------------------------------------------\n# Detection\n# ---------------------------------------------------------------------------\ndef _get_arch() -> str:\n    \"\"\"Return the platform subdirectory used inside the SDK tarball.\"\"\"\n    machine = platform.machine()\n    if machine in (\"x86_64\", \"AMD64\", \"x86-64\"):",
+        "detail": "nvidia_driver_setup.nvidia.vulkan",
+        "documentation": {}
+    },
+    {
+        "label": "_VULKAN_PROFILE_SCRIPT",
+        "kind": 5,
+        "importPath": "nvidia_driver_setup.nvidia.vulkan",
+        "description": "nvidia_driver_setup.nvidia.vulkan",
+        "peekOfCode": "_VULKAN_PROFILE_SCRIPT = \"/etc/profile.d/vulkan-sdk.sh\"\n_DOWNLOAD_PATH = \"/tmp/vulkan_sdk.tar.xz\"\n# ---------------------------------------------------------------------------\n# Detection\n# ---------------------------------------------------------------------------\ndef _get_arch() -> str:\n    \"\"\"Return the platform subdirectory used inside the SDK tarball.\"\"\"\n    machine = platform.machine()\n    if machine in (\"x86_64\", \"AMD64\", \"x86-64\"):\n        return \"x86_64\"",
+        "detail": "nvidia_driver_setup.nvidia.vulkan",
+        "documentation": {}
+    },
+    {
+        "label": "_DOWNLOAD_PATH",
+        "kind": 5,
+        "importPath": "nvidia_driver_setup.nvidia.vulkan",
+        "description": "nvidia_driver_setup.nvidia.vulkan",
+        "peekOfCode": "_DOWNLOAD_PATH = \"/tmp/vulkan_sdk.tar.xz\"\n# ---------------------------------------------------------------------------\n# Detection\n# ---------------------------------------------------------------------------\ndef _get_arch() -> str:\n    \"\"\"Return the platform subdirectory used inside the SDK tarball.\"\"\"\n    machine = platform.machine()\n    if machine in (\"x86_64\", \"AMD64\", \"x86-64\"):\n        return \"x86_64\"\n    if machine in (\"aarch64\", \"arm64\"):",
         "detail": "nvidia_driver_setup.nvidia.vulkan",
         "documentation": {}
     },
