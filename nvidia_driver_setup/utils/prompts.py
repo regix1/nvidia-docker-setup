@@ -1,8 +1,17 @@
 """Interactive prompt utilities"""
 
 import sys
+import termios
 
 from .logging import log_prompt, log_error, log_info
+
+
+def _flush_stdin() -> None:
+    """Discard any buffered input on stdin (prevents stale keypresses)."""
+    try:
+        termios.tcflush(sys.stdin.fileno(), termios.TCIFLUSH)
+    except (termios.error, OSError, ValueError):
+        pass
 
 
 def prompt_yes_no(prompt, default='y'):
@@ -16,6 +25,7 @@ def prompt_yes_no(prompt, default='y'):
     Returns:
         bool: True for yes, False for no
     """
+    _flush_stdin()
     while True:
         log_prompt(f"{prompt} [Y/n]: ")
         response = input().strip()
@@ -41,6 +51,7 @@ def prompt_choice(prompt, choices, default=None):
     Returns:
         int: Index of selected choice
     """
+    _flush_stdin()
     while True:
         if default is not None:
             log_prompt(f"{prompt} [1-{len(choices)}, default: {default + 1}]: ")
@@ -74,6 +85,7 @@ def prompt_input(prompt, default=None, required=True):
     Returns:
         str: User input or default
     """
+    _flush_stdin()
     while True:
         default_text = f" (default: {default})" if default else ""
         log_prompt(f"{prompt}{default_text}: ")

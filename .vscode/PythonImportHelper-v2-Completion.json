@@ -138,6 +138,15 @@
         "documentation": {}
     },
     {
+        "label": "termios",
+        "kind": 6,
+        "isExtraImport": true,
+        "importPath": "termios",
+        "description": "termios",
+        "detail": "termios",
+        "documentation": {}
+    },
+    {
         "label": "datetime",
         "importPath": "datetime",
         "description": "datetime",
@@ -730,7 +739,7 @@
         "kind": 2,
         "importPath": "nvidia_driver_setup.utils.prompts",
         "description": "nvidia_driver_setup.utils.prompts",
-        "peekOfCode": "def prompt_yes_no(prompt, default='y'):\n    \"\"\"\n    Interactive yes/no prompt\n    Args:\n        prompt: Question to ask\n        default: Default answer ('y' or 'n')\n    Returns:\n        bool: True for yes, False for no\n    \"\"\"\n    while True:",
+        "peekOfCode": "def prompt_yes_no(prompt, default='y'):\n    \"\"\"\n    Interactive yes/no prompt\n    Args:\n        prompt: Question to ask\n        default: Default answer ('y' or 'n')\n    Returns:\n        bool: True for yes, False for no\n    \"\"\"\n    _flush_stdin()",
         "detail": "nvidia_driver_setup.utils.prompts",
         "documentation": {}
     },
