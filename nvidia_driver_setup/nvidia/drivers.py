@@ -491,22 +491,34 @@ def _install_vulkan_support(apt: AptManager, major: str) -> None:
     After installing, we verify the libraries exist and regenerate
     the NVIDIA CDI spec so containers can access them.
     """
-    # libnvidia-gl bundles: GLX, EGL, Vulkan ICD, glvkspirv, gpucomp
-    gl_package = f"libnvidia-gl-{major}"
-    log_info(f"Installing Vulkan/OpenGL support: {gl_package}")
-    try:
-        apt.install(gl_package)
-        log_info(f"Successfully installed {gl_package}")
-    except Exception:
-        log_warn(f"Could not install {gl_package} - Vulkan may not work properly")
+    # On Ubuntu, these packages provide the Vulkan runtime stack used by
+    # container workloads. libnvidia-extra may include auxiliary runtime libs
+    # (for example sandbox/Vulkan producer variants on some branches).
+    vulkan_packages = [
+        f"libnvidia-gl-{major}",
+        f"libnvidia-extra-{major}",
+    ]
+    for pkg in vulkan_packages:
+        log_info(f"Installing Vulkan/OpenGL support: {pkg}")
+        try:
+            apt.install(pkg)
+            log_info(f"Successfully installed {pkg}")
+        except Exception:
+            log_warn(f"Could not install {pkg} - Vulkan may not work properly")
 
-    # Verify critical Vulkan libraries are present
-    vulkan_libs = [
+    # Verify critical Vulkan libraries are present.
+    required_vulkan_libs = [
         ("libnvidia-glvkspirv.so", "Vulkan SPIR-V compiler"),
         ("libnvidia-gpucomp.so", "Vulkan GPU compiler"),
     ]
+    # Optional libraries: missing entries can trigger nvidia-ctk warnings
+    # but do not always indicate a broken Vulkan runtime.
+    optional_vulkan_libs = [
+        ("libnvidia-vulkan-producer.so", "Vulkan producer runtime"),
+        ("libnvidia-sandboxutils.so.1", "Sandbox utilities runtime"),
+    ]
     lib_dir = "/usr/lib/x86_64-linux-gnu"
-    for lib_name, description in vulkan_libs:
+    for lib_name, description in required_vulkan_libs:
         found = any(
             f.startswith(lib_name) for f in os.listdir(lib_dir)
         ) if os.path.isdir(lib_dir) else False
@@ -515,6 +527,15 @@ def _install_vulkan_support(apt: AptManager, major: str) -> None:
         else:
             log_warn(f"  {description}: NOT found — Vulkan may not work")
             log_warn(f"    Expected {lib_name}* in {lib_dir}")
+
+    for lib_name, description in optional_vulkan_libs:
+        found = any(
+            f.startswith(lib_name) for f in os.listdir(lib_dir)
+        ) if os.path.isdir(lib_dir) else False
+        if found:
+            log_info(f"  {description}: found")
+        else:
+            log_info(f"  {description}: not found (optional on some driver builds)")
 
     # Regenerate CDI spec so containers pick up the Vulkan libraries
     _regenerate_cdi_spec()
