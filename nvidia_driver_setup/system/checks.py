@@ -317,7 +317,9 @@ def detect_existing_installations():
         'nvidia_driver': {'installed': False, 'version': None},
         'docker': {'installed': False, 'version': None},
         'nvidia_runtime': {'installed': False, 'version': None},
-        'vulkan': {'installed': False, 'version': None}
+        'vulkan': {'installed': False, 'version': None},
+        'vulkan_sdk': {'installed': False, 'version': None},
+        'cuda_toolkit': {'installed': False, 'version': None},
     }
 
     # Check NVIDIA driver
@@ -372,6 +374,34 @@ def detect_existing_installations():
             elif "Vulkan Instance Version" in vulkan_output:
                 installations['vulkan']['installed'] = True
                 installations['vulkan']['version'] = "Available"
+    except:
+        pass
+
+    # Check Vulkan SDK (LunarG development SDK)
+    try:
+        sdk_output = run_command(
+            "dpkg -s vulkan-sdk 2>/dev/null | grep '^Version:'",
+            capture_output=True, check=False,
+        )
+        if sdk_output and "Version:" in sdk_output:
+            installations['vulkan_sdk']['installed'] = True
+            installations['vulkan_sdk']['version'] = sdk_output.split("Version:")[1].strip()
+    except:
+        pass
+    if not installations['vulkan_sdk']['installed']:
+        sdk_path = os.environ.get("VULKAN_SDK")
+        if sdk_path and os.path.isdir(sdk_path):
+            installations['vulkan_sdk']['installed'] = True
+            installations['vulkan_sdk']['version'] = "Installed"
+
+    # Check CUDA Toolkit (host nvcc)
+    try:
+        nvcc_output = run_command("nvcc --version 2>/dev/null", capture_output=True, check=False)
+        if nvcc_output and "release" in nvcc_output.lower():
+            match = re.search(r"release\s+([\d.]+)", nvcc_output)
+            if match:
+                installations['cuda_toolkit']['installed'] = True
+                installations['cuda_toolkit']['version'] = match.group(1)
     except:
         pass
 

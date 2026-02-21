@@ -61,6 +61,22 @@
         "documentation": {}
     },
     {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
+        "label": "Optional",
+        "importPath": "typing",
+        "description": "typing",
+        "isExtraImport": true,
+        "detail": "typing",
+        "documentation": {}
+    },
+    {
         "label": "glob",
         "kind": 6,
         "isExtraImport": true,
@@ -242,6 +258,22 @@
         "documentation": {}
     },
     {
+        "label": "install_vulkan_sdk",
+        "importPath": "nvidia_driver_setup.nvidia.vulkan",
+        "description": "nvidia_driver_setup.nvidia.vulkan",
+        "isExtraImport": true,
+        "detail": "nvidia_driver_setup.nvidia.vulkan",
+        "documentation": {}
+    },
+    {
+        "label": "install_cuda_toolkit",
+        "importPath": "nvidia_driver_setup.nvidia.cuda_toolkit",
+        "description": "nvidia_driver_setup.nvidia.cuda_toolkit",
+        "isExtraImport": true,
+        "detail": "nvidia_driver_setup.nvidia.cuda_toolkit",
+        "documentation": {}
+    },
+    {
         "label": "setup_docker",
         "importPath": "nvidia_driver_setup.docker.setup",
         "description": "nvidia_driver_setup.docker.setup",
@@ -349,6 +381,24 @@
         "description": "nvidia_driver_setup.nvidia.cuda",
         "peekOfCode": "_DOCKERHUB_TIMEOUT = 15  # seconds\n# Minimum Linux driver required per CUDA version (from NVIDIA release notes).\n# Keys are the CUDA *image* version (X.Y.Z); values are the min driver string.\n_MIN_DRIVER: dict[str, str] = {\n    \"13.1.1\": \"590.48.01\",\n    \"13.1.0\": \"590.44.01\",\n    \"13.0.2\": \"580.95.05\",\n    \"13.0.1\": \"580.82.07\",\n    \"13.0.0\": \"580.65.06\",\n    \"12.9.1\": \"575.57.08\",",
         "detail": "nvidia_driver_setup.nvidia.cuda",
+        "documentation": {}
+    },
+    {
+        "label": "install_cuda_toolkit",
+        "kind": 2,
+        "importPath": "nvidia_driver_setup.nvidia.cuda_toolkit",
+        "description": "nvidia_driver_setup.nvidia.cuda_toolkit",
+        "peekOfCode": "def install_cuda_toolkit() -> None:\n    \"\"\"Install the NVIDIA CUDA Toolkit on the host.\n    Main entry point called from the CLI menu.\n    \"\"\"\n    log_step(\"CUDA Toolkit Installation\")\n    log_info(\"This installs the CUDA compiler (nvcc), development libraries,\")\n    log_info(\"and headers on the host.  Separate from CUDA container images.\\n\")\n    # Check if already installed\n    existing = _detect_cuda_toolkit()\n    if existing:",
+        "detail": "nvidia_driver_setup.nvidia.cuda_toolkit",
+        "documentation": {}
+    },
+    {
+        "label": "_CUDA_PROFILE_SCRIPT",
+        "kind": 5,
+        "importPath": "nvidia_driver_setup.nvidia.cuda_toolkit",
+        "description": "nvidia_driver_setup.nvidia.cuda_toolkit",
+        "peekOfCode": "_CUDA_PROFILE_SCRIPT = \"/etc/profile.d/cuda.sh\"\n# ---------------------------------------------------------------------------\n# Detection\n# ---------------------------------------------------------------------------\ndef _detect_cuda_toolkit() -> Optional[str]:\n    \"\"\"Check if the CUDA Toolkit is installed on the host.\n    Returns:\n        Version string (e.g. \"12.8.0\") if installed, None otherwise.\n    \"\"\"\n    # Try nvcc first",
+        "detail": "nvidia_driver_setup.nvidia.cuda_toolkit",
         "documentation": {}
     },
     {
@@ -469,6 +519,51 @@
         "documentation": {}
     },
     {
+        "label": "install_vulkan_sdk",
+        "kind": 2,
+        "importPath": "nvidia_driver_setup.nvidia.vulkan",
+        "description": "nvidia_driver_setup.nvidia.vulkan",
+        "peekOfCode": "def install_vulkan_sdk() -> None:\n    \"\"\"Install the LunarG Vulkan SDK on the host.\n    Main entry point called from the CLI menu.\n    \"\"\"\n    log_step(\"Vulkan SDK Installation\")\n    # Check if already installed\n    existing = _detect_vulkan_sdk()\n    if existing:\n        log_info(f\"Vulkan SDK is already installed (version: {existing})\")\n        if not prompt_yes_no(\"Reinstall / update Vulkan SDK?\"):",
+        "detail": "nvidia_driver_setup.nvidia.vulkan",
+        "documentation": {}
+    },
+    {
+        "label": "_LUNARG_VERSIONS_URL",
+        "kind": 5,
+        "importPath": "nvidia_driver_setup.nvidia.vulkan",
+        "description": "nvidia_driver_setup.nvidia.vulkan",
+        "peekOfCode": "_LUNARG_VERSIONS_URL = \"https://vulkan.lunarg.com/sdk/versions/linux.json\"\n_LUNARG_LATEST_URL = \"https://vulkan.lunarg.com/sdk/latest/linux.json\"\n_LUNARG_TIMEOUT = 15  # seconds\n# APT repo base URL -- repo directories use 3-part versions (e.g. 1.4.309)\n_LUNARG_PACKAGES_BASE = \"https://packages.lunarg.com/vulkan\"\n# ---------------------------------------------------------------------------\n# Detection\n# ---------------------------------------------------------------------------\ndef _detect_vulkan_sdk() -> Optional[str]:\n    \"\"\"Check if the Vulkan SDK is already installed.",
+        "detail": "nvidia_driver_setup.nvidia.vulkan",
+        "documentation": {}
+    },
+    {
+        "label": "_LUNARG_LATEST_URL",
+        "kind": 5,
+        "importPath": "nvidia_driver_setup.nvidia.vulkan",
+        "description": "nvidia_driver_setup.nvidia.vulkan",
+        "peekOfCode": "_LUNARG_LATEST_URL = \"https://vulkan.lunarg.com/sdk/latest/linux.json\"\n_LUNARG_TIMEOUT = 15  # seconds\n# APT repo base URL -- repo directories use 3-part versions (e.g. 1.4.309)\n_LUNARG_PACKAGES_BASE = \"https://packages.lunarg.com/vulkan\"\n# ---------------------------------------------------------------------------\n# Detection\n# ---------------------------------------------------------------------------\ndef _detect_vulkan_sdk() -> Optional[str]:\n    \"\"\"Check if the Vulkan SDK is already installed.\n    Returns:",
+        "detail": "nvidia_driver_setup.nvidia.vulkan",
+        "documentation": {}
+    },
+    {
+        "label": "_LUNARG_TIMEOUT",
+        "kind": 5,
+        "importPath": "nvidia_driver_setup.nvidia.vulkan",
+        "description": "nvidia_driver_setup.nvidia.vulkan",
+        "peekOfCode": "_LUNARG_TIMEOUT = 15  # seconds\n# APT repo base URL -- repo directories use 3-part versions (e.g. 1.4.309)\n_LUNARG_PACKAGES_BASE = \"https://packages.lunarg.com/vulkan\"\n# ---------------------------------------------------------------------------\n# Detection\n# ---------------------------------------------------------------------------\ndef _detect_vulkan_sdk() -> Optional[str]:\n    \"\"\"Check if the Vulkan SDK is already installed.\n    Returns:\n        Version string if installed, None otherwise.",
+        "detail": "nvidia_driver_setup.nvidia.vulkan",
+        "documentation": {}
+    },
+    {
+        "label": "_LUNARG_PACKAGES_BASE",
+        "kind": 5,
+        "importPath": "nvidia_driver_setup.nvidia.vulkan",
+        "description": "nvidia_driver_setup.nvidia.vulkan",
+        "peekOfCode": "_LUNARG_PACKAGES_BASE = \"https://packages.lunarg.com/vulkan\"\n# ---------------------------------------------------------------------------\n# Detection\n# ---------------------------------------------------------------------------\ndef _detect_vulkan_sdk() -> Optional[str]:\n    \"\"\"Check if the Vulkan SDK is already installed.\n    Returns:\n        Version string if installed, None otherwise.\n    \"\"\"\n    # Try dpkg first (most reliable for APT installs)",
+        "detail": "nvidia_driver_setup.nvidia.vulkan",
+        "documentation": {}
+    },
+    {
         "label": "get_system_info",
         "kind": 2,
         "importPath": "nvidia_driver_setup.system.checks",
@@ -500,7 +595,7 @@
         "kind": 2,
         "importPath": "nvidia_driver_setup.system.checks",
         "description": "nvidia_driver_setup.system.checks",
-        "peekOfCode": "def detect_existing_installations():\n    \"\"\"Detect what's already installed on the system\"\"\"\n    installations = {\n        'nvidia_driver': {'installed': False, 'version': None},\n        'docker': {'installed': False, 'version': None},\n        'nvidia_runtime': {'installed': False, 'version': None},\n        'vulkan': {'installed': False, 'version': None}\n    }\n    # Check NVIDIA driver\n    try:",
+        "peekOfCode": "def detect_existing_installations():\n    \"\"\"Detect what's already installed on the system\"\"\"\n    installations = {\n        'nvidia_driver': {'installed': False, 'version': None},\n        'docker': {'installed': False, 'version': None},\n        'nvidia_runtime': {'installed': False, 'version': None},\n        'vulkan': {'installed': False, 'version': None},\n        'vulkan_sdk': {'installed': False, 'version': None},\n        'cuda_toolkit': {'installed': False, 'version': None},\n    }",
         "detail": "nvidia_driver_setup.system.checks",
         "documentation": {}
     },

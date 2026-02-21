@@ -18,6 +18,8 @@ from nvidia_driver_setup.system.checks import (
 from nvidia_driver_setup.utils.system import full_nvidia_cleanup, cleanup_nvidia_repos
 from nvidia_driver_setup.nvidia.drivers import select_nvidia_driver
 from nvidia_driver_setup.nvidia.cuda import select_cuda_version
+from nvidia_driver_setup.nvidia.vulkan import install_vulkan_sdk
+from nvidia_driver_setup.nvidia.cuda_toolkit import install_cuda_toolkit
 from nvidia_driver_setup.docker.setup import setup_docker
 from nvidia_driver_setup.nvidia.patches import apply_nvidia_patches, get_nvenc_session_info
 from nvidia_driver_setup.docker.config import configure_docker_for_media
@@ -27,16 +29,18 @@ from nvidia_driver_setup.docker.config import configure_docker_for_media
 EXECUTION_ORDER: dict[int, int] = {
     0: 1,  # NVIDIA Drivers
     1: 2,  # Docker
-    2: 3,  # CUDA
-    3: 4,  # Patches
-    4: 5,  # Media Config
-    5: 6,  # System Audit / Cleanup
-    6: 7,  # Self-Update (always last)
+    2: 3,  # CUDA Container Version
+    3: 4,  # Vulkan SDK
+    4: 5,  # CUDA Toolkit
+    5: 6,  # Patches
+    6: 7,  # Media Config
+    7: 8,  # System Audit / Cleanup
+    8: 9,  # Self-Update (always last)
 }
 
 # Menu indices whose execution can change installed component state.
 # Only re-run detect_existing_installations() when these ran.
-_STATUS_CHANGING_INDICES: set[int] = {0, 1, 3, 4}  # drivers, docker, patches, media
+_STATUS_CHANGING_INDICES: set[int] = {0, 1, 3, 4, 5, 6}  # drivers, docker, vulkan, cuda toolkit, patches, media
 
 
 def show_banner() -> None:
@@ -113,29 +117,49 @@ def build_menu_options(
         descriptions.append("Install Docker and NVIDIA Container Toolkit")
         statuses.append("[--]")
 
-    # 2 - CUDA
+    # 2 - CUDA Container Version
     options.append("Select CUDA Version")
     descriptions.append("Choose CUDA version for containers")
     statuses.append("")
 
-    # 3 - Patches
+    # 3 - Vulkan SDK
+    if installations["vulkan_sdk"]["installed"]:
+        options.append(f"Reinstall Vulkan SDK (Current: {installations['vulkan_sdk']['version']})")
+        descriptions.append("Reinstall or update the LunarG Vulkan SDK")
+        statuses.append("[OK]")
+    else:
+        options.append("Install Vulkan SDK")
+        descriptions.append("LunarG Vulkan SDK (validation layers, SPIR-V tools, headers)")
+        statuses.append("[--]")
+
+    # 4 - CUDA Toolkit
+    if installations["cuda_toolkit"]["installed"]:
+        options.append(f"Reinstall CUDA Toolkit (Current: {installations['cuda_toolkit']['version']})")
+        descriptions.append("Reinstall or update the host CUDA Toolkit")
+        statuses.append("[OK]")
+    else:
+        options.append("Install CUDA Toolkit")
+        descriptions.append("NVIDIA CUDA Toolkit on host (nvcc, cuDNN, dev libraries)")
+        statuses.append("[--]")
+
+    # 5 - Patches
     nvenc_status = _check_nvenc_patch_status()
     options.append("Apply NVIDIA Patches (NVENC/NvFBC)")
     descriptions.append("Remove NVENC session limits and enable NvFBC")
     statuses.append(nvenc_status)
 
-    # 4 - Media Config
+    # 6 - Media Config
     media_status = _check_media_config_status()
     options.append("Configure for Media Servers")
     descriptions.append("Optimize Docker for Plex/media processing")
     statuses.append(media_status)
 
-    # 5 - System Audit / Cleanup
+    # 7 - System Audit / Cleanup
     options.append("System Audit / Cleanup")
     descriptions.append("Scan for old drivers, stale libraries, and repo issues")
     statuses.append("")
 
-    # 6 - Self-Update
+    # 8 - Self-Update
     options.append("Update nvidia-setup")
     descriptions.append("Check for and apply updates to this tool")
     statuses.append("")
@@ -163,16 +187,22 @@ def _execute_single_item(idx: int, installations: dict) -> None:
         else:
             setup_docker()
 
-    elif idx == 2:  # CUDA
+    elif idx == 2:  # CUDA Container Version
         select_cuda_version()
 
-    elif idx == 3:  # Patches
+    elif idx == 3:  # Vulkan SDK
+        install_vulkan_sdk()
+
+    elif idx == 4:  # CUDA Toolkit
+        install_cuda_toolkit()
+
+    elif idx == 5:  # Patches
         apply_nvidia_patches()
 
-    elif idx == 4:  # Media Config
+    elif idx == 6:  # Media Config
         configure_docker_for_media()
 
-    elif idx == 5:  # System Audit / Cleanup
+    elif idx == 7:  # System Audit / Cleanup
         log_step("System Audit / Cleanup")
         log_info("Scanning for issues (dry-run)...")
         has_issues = full_nvidia_cleanup(dry_run=True)
@@ -184,7 +214,7 @@ def _execute_single_item(idx: int, installations: dict) -> None:
             log_success("System is clean -- no old drivers or stale libraries found")
             cleanup_nvidia_repos()
 
-    elif idx == 6:  # Self-Update
+    elif idx == 8:  # Self-Update
         from nvidia_driver_setup.updater import run_self_update
         run_self_update()
 
@@ -248,10 +278,22 @@ def _display_status(installations: dict) -> None:
         if installations["nvidia_runtime"]["installed"]
         else "[--] Not configured"
     )
+    vulkan_sdk_status = (
+        f"[OK] {installations['vulkan_sdk']['version']}"
+        if installations["vulkan_sdk"]["installed"]
+        else "[--] Not installed"
+    )
+    cuda_toolkit_status = (
+        f"[OK] {installations['cuda_toolkit']['version']}"
+        if installations["cuda_toolkit"]["installed"]
+        else "[--] Not installed"
+    )
     print("\nInstallation Status:")
     print(f"  NVIDIA Driver:  {nvidia_status}")
     print(f"  Docker:         {docker_status}")
     print(f"  NVIDIA Runtime: {runtime_status}")
+    print(f"  Vulkan SDK:     {vulkan_sdk_status}")
+    print(f"  CUDA Toolkit:   {cuda_toolkit_status}")
     print()
 
 
