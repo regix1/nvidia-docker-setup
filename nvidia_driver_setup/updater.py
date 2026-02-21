@@ -3,6 +3,7 @@
 Detects how the tool was installed (git clone vs pip) and updates accordingly.
 """
 
+import os
 import subprocess
 import sys
 from enum import Enum
@@ -203,6 +204,35 @@ def run_self_update() -> None:
         success = _perform_pip_update()
 
     if success:
-        log_success("Update applied! Please restart nvidia-setup for changes to take effect.")
+        log_success("Update applied! Restarting with updated code...")
+        _restart_process()
     else:
         log_error("Update failed. See errors above.")
+
+
+def _restart_process() -> None:
+    """Replace the current process with a fresh one to load updated code.
+
+    Uses os.execv() which atomically replaces the running process image,
+    so the new instance loads all updated modules from disk.
+    """
+    executable = sys.executable
+    args = sys.argv[:]
+
+    # Determine how we were launched to pick the right re-exec strategy
+    method = detect_install_method()
+
+    # Check if launched via an installed console_scripts entry point (nvidia-setup)
+    script_path = subprocess.run(
+        ["which", "nvidia-setup"],
+        capture_output=True, text=True,
+    )
+    if script_path.returncode == 0 and script_path.stdout.strip():
+        # Re-exec the installed command directly
+        cmd = script_path.stdout.strip()
+        log_info(f"Restarting: {cmd}")
+        os.execv(cmd, [cmd] + args[1:])
+
+    # Fallback: re-exec via python3 -m nvidia_driver_setup
+    log_info(f"Restarting: {executable} -m nvidia_driver_setup")
+    os.execv(executable, [executable, "-m", "nvidia_driver_setup"] + args[1:])
