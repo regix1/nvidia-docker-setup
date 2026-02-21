@@ -278,7 +278,9 @@ def audit_nvidia_packages(current_major: str | None = None) -> dict[str, list[tu
         # libnvidia-encode-580) are driver-versioned.  Packages like nvidia-settings,
         # nvidia-prime, nvtop are standalone utilities whose package version (e.g.
         # 510.47.03) does NOT indicate a driver version.
-        pkg_major_match = re.search(r'-(\d{3,})', pkg_name)
+        # Match exactly 3 digits to avoid false positives on year-based versions
+        # like nsight-compute-2025 or cuda-nsight-systems-13.
+        pkg_major_match = re.search(r'-(\d{3})(?:\b|-)', pkg_name)
         detected_major: str | None = None
         if pkg_major_match:
             detected_major = pkg_major_match.group(1)
