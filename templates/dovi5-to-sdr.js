@@ -7,7 +7,8 @@
  * filter that natively understands IPTPQc2 and applies the DV RPU reshaping
  * to produce correct colors.
  *
- * Pipeline: Decode → Vulkan upload → libplacebo tone-map → download → NVENC encode
+ * Pipeline: Decode → Vulkan upload → libplacebo tone-map → download → HW/SW encode
+ * Encoder priority: NVENC (NVIDIA) → QSV (Intel Quick Sync) → libx265 (software)
  * Audio and subtitle streams are copied without re-encoding.
  *
  * Connect this to Output 3 of the "Detect DV Profile" script.
@@ -39,7 +40,7 @@ function Script() {
         "format=yuv420p"
     ].join(":");
 
-    let useNvenc = detectNvenc(ffmpeg);
+    let encoder = detectEncoder(ffmpeg);
 
     let args = [
         "-y",
@@ -50,8 +51,10 @@ function Script() {
         "-vf", vf
     ];
 
-    if (useNvenc) {
+    if (encoder === "nvenc") {
         args = args.concat(["-c:v", "hevc_nvenc", "-preset", "p4", "-cq", "20"]);
+    } else if (encoder === "qsv") {
+        args = args.concat(["-c:v", "hevc_qsv", "-preset", "medium", "-global_quality", "20"]);
     } else {
         args = args.concat(["-c:v", "libx265", "-preset", "medium", "-crf", "20",
                             "-x265-params", "log-level=error"]);
@@ -100,12 +103,13 @@ function Script() {
 }
 
 /**
- * Tests whether hevc_nvenc is actually usable by running a minimal test encode.
- * Checking ldconfig alone is not enough — libcuda.so.1 may appear in the cache
- * but not be loadable by FFmpeg at runtime.
+ * Detects the best available hardware encoder by running minimal test encodes.
+ * Priority: NVENC (NVIDIA) → QSV (Intel Quick Sync) → software fallback.
+ * Returns "nvenc", "qsv", or "software".
  */
-function detectNvenc(ffmpeg) {
-    let test = Flow.Execute({
+function detectEncoder(ffmpeg) {
+    // Test NVENC (NVIDIA)
+    let nvencTest = Flow.Execute({
         command: ffmpeg,
         argumentList: [
             "-hide_banner", "-loglevel", "error",
@@ -114,19 +118,49 @@ function detectNvenc(ffmpeg) {
         ]
     });
 
-    if (test.exitCode === 0) {
+    if (nvencTest.exitCode === 0) {
         Logger.ILog("NVENC test encode succeeded — using hevc_nvenc");
-        return true;
+        return "nvenc";
     }
 
-    Logger.ILog("NVENC not usable — falling back to libx265 software encoder");
-    let stderr = test.standardError || test.output || "";
-    if (stderr.length > 0) {
-        if (stderr.length > 500)
-            stderr = stderr.substring(stderr.length - 500);
-        Logger.ILog("NVENC test output: " + stderr);
+    let nvencErr = nvencTest.standardError || nvencTest.output || "";
+    if (nvencErr.indexOf("libcuda") >= 0 || nvencErr.indexOf("CUDA") >= 0) {
+        Logger.ILog("No NVIDIA GPU detected — NVENC requires an NVIDIA GPU. Checking Intel QSV...");
+    } else {
+        Logger.ILog("NVENC not available — checking Intel QSV...");
     }
-    return false;
+
+    // Test QSV (Intel Quick Sync)
+    let qsvTest = Flow.Execute({
+        command: ffmpeg,
+        argumentList: [
+            "-hide_banner", "-loglevel", "error",
+            "-init_hw_device", "qsv=qsv:hw",
+            "-f", "lavfi", "-i", "nullsrc=s=256x256:d=0.04",
+            "-c:v", "hevc_qsv", "-f", "null", "-"
+        ]
+    });
+
+    if (qsvTest.exitCode === 0) {
+        Logger.ILog("Intel QSV test encode succeeded — using hevc_qsv");
+        return "qsv";
+    }
+
+    let qsvErr = qsvTest.standardError || qsvTest.output || "";
+    if (qsvErr.indexOf("/dev/dri") >= 0 || qsvErr.indexOf("No such file") >= 0) {
+        Logger.ILog("Intel QSV not available — /dev/dri not passed to container. Add --device=/dev/dri:/dev/dri to enable QSV. Falling back to libx265 software encoder.");
+    } else if (qsvErr.indexOf("MFX") >= 0 || qsvErr.indexOf("mfx") >= 0 || qsvErr.indexOf("libmfx") >= 0 || qsvErr.indexOf("libvpl") >= 0) {
+        Logger.ILog("Intel QSV not available — QSV runtime not found. Falling back to libx265 software encoder.");
+    } else {
+        Logger.ILog("Intel QSV not available — falling back to libx265 software encoder");
+        if (qsvErr.length > 0) {
+            if (qsvErr.length > 500)
+                qsvErr = qsvErr.substring(qsvErr.length - 500);
+            Logger.ILog("QSV test output: " + qsvErr);
+        }
+    }
+
+    return "software";
 }
 
 /**

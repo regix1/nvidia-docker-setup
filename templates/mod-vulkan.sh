@@ -6,8 +6,8 @@
 # appropriate Vulkan loader and ICD driver.
 #
 #   NVIDIA  → libvulkan1 + EGL-based ICD JSON (for FFmpeg/libplacebo compat)
-#   Intel   → libvulkan1 + mesa-vulkan-drivers (ANV driver, auto-registers ICD)
-#   AMD     → libvulkan1 + mesa-vulkan-drivers (RADV driver, auto-registers ICD)
+#   Intel   → libvulkan1 + mesa-vulkan-drivers + intel-media-va-driver-non-free
+#   AMD     → libvulkan1 + mesa-vulkan-drivers
 #
 # Usage:
 #   ./mod-vulkan.sh              # install
@@ -22,6 +22,22 @@ set -euo pipefail
 handle_error() {
     echo "An error occurred. Exiting..."
     exit 1
+}
+
+APT_UPDATED=0
+ensure_apt_updated() {
+    if [ "$APT_UPDATED" -eq 0 ]; then
+        echo "Updating package lists..."
+        export DEBIAN_FRONTEND=noninteractive
+        apt-get update || true
+        APT_UPDATED=1
+    fi
+}
+
+install_packages() {
+    ensure_apt_updated
+    export DEBIAN_FRONTEND=noninteractive
+    apt-get install -y --no-install-recommends "$@"
 }
 
 detect_gpu() {
@@ -68,7 +84,7 @@ detect_gpu() {
 
 if [ "${1:-}" = "--uninstall" ]; then
     echo "Uninstalling Vulkan support..."
-    apt-get remove -y libvulkan1 mesa-vulkan-drivers 2>/dev/null || true
+    apt-get remove -y libvulkan1 mesa-vulkan-drivers intel-media-va-driver-non-free vulkan-tools 2>/dev/null || true
     rm -f /etc/vulkan/icd.d/nvidia_egl_icd.json
     apt-get autoremove -y
     echo "Vulkan support successfully uninstalled."
@@ -83,25 +99,22 @@ GPU_VENDOR=$(detect_gpu)
 echo "Detected GPU vendor: $GPU_VENDOR"
 
 # ---------------------------------------------------------------------------
-# Install Vulkan loader (required for all vendors)
-# ---------------------------------------------------------------------------
-
-if dpkg -s libvulkan1 &>/dev/null; then
-    echo "libvulkan1 already installed."
-else
-    echo "Installing Vulkan loader..."
-    export DEBIAN_FRONTEND=noninteractive
-    if ! apt-get update || ! apt-get install -y --no-install-recommends libvulkan1; then
-        handle_error
-    fi
-fi
-
-# ---------------------------------------------------------------------------
-# Vendor-specific configuration
+# Vendor-specific installation
 # ---------------------------------------------------------------------------
 
 case "$GPU_VENDOR" in
     nvidia)
+        # NVIDIA container toolkit mounts the driver libraries and ICD.
+        # We only need libvulkan1 (loader) and our EGL-based ICD workaround.
+        NEEDED=()
+        dpkg -s libvulkan1 &>/dev/null    || NEEDED+=(libvulkan1)
+        dpkg -s vulkan-tools &>/dev/null  || NEEDED+=(vulkan-tools)
+
+        if [ ${#NEEDED[@]} -gt 0 ]; then
+            echo "Installing NVIDIA Vulkan packages: ${NEEDED[*]}"
+            install_packages "${NEEDED[@]}"
+        fi
+
         EGL_ICD="/etc/vulkan/icd.d/nvidia_egl_icd.json"
 
         if [ -f "$EGL_ICD" ]; then
@@ -136,25 +149,81 @@ EOF
         fi
         ;;
 
-    intel|amd|mesa)
-        # Mesa Vulkan drivers include both Intel ANV and AMD RADV.
-        # The package auto-registers its ICD JSON under /usr/share/vulkan/icd.d/.
-        if dpkg -s mesa-vulkan-drivers &>/dev/null; then
+    intel)
+        # Intel iGPU needs:
+        #   libvulkan1                       — Vulkan loader
+        #   mesa-vulkan-drivers              — Intel ANV Vulkan driver (for libplacebo)
+        #   intel-media-va-driver-non-free   — VA-API driver (for hardware decode/encode, QSV)
+        NEEDED=()
+
+        dpkg -s libvulkan1 &>/dev/null                    || NEEDED+=(libvulkan1)
+        dpkg -s mesa-vulkan-drivers &>/dev/null            || NEEDED+=(mesa-vulkan-drivers)
+        dpkg -s intel-media-va-driver-non-free &>/dev/null || NEEDED+=(intel-media-va-driver-non-free)
+        dpkg -s vulkan-tools &>/dev/null                   || NEEDED+=(vulkan-tools)
+
+        if [ ${#NEEDED[@]} -eq 0 ]; then
+            echo "All Intel GPU packages already installed."
+        else
+            echo "Installing Intel GPU packages: ${NEEDED[*]}"
+            install_packages "${NEEDED[@]}"
+        fi
+
+        # Remove stale NVIDIA ICD files (left over if this container was
+        # previously used with an NVIDIA GPU — causes harmless but noisy errors)
+        for stale_icd in /etc/vulkan/icd.d/nvidia_egl_icd.json \
+                         /etc/vulkan/icd.d/nvidia_icd.json; do
+            if [ -f "$stale_icd" ]; then
+                echo "Removing stale NVIDIA ICD: $stale_icd"
+                rm -f "$stale_icd"
+            fi
+        done
+
+        # Ensure the render node is accessible
+        if [ -e /dev/dri/renderD128 ]; then
+            echo "Render node /dev/dri/renderD128 is available."
+        else
+            echo "Warning: /dev/dri/renderD128 not found — ensure --device /dev/dri:/dev/dri is set."
+        fi
+        ;;
+
+    amd)
+        # AMD GPU needs:
+        #   libvulkan1          — Vulkan loader
+        #   mesa-vulkan-drivers — AMD RADV Vulkan driver
+        NEEDED=()
+
+        dpkg -s libvulkan1 &>/dev/null          || NEEDED+=(libvulkan1)
+        dpkg -s mesa-vulkan-drivers &>/dev/null  || NEEDED+=(mesa-vulkan-drivers)
+        dpkg -s vulkan-tools &>/dev/null         || NEEDED+=(vulkan-tools)
+
+        if [ ${#NEEDED[@]} -eq 0 ]; then
+            echo "All AMD GPU packages already installed."
+        else
+            echo "Installing AMD GPU packages: ${NEEDED[*]}"
+            install_packages "${NEEDED[@]}"
+        fi
+        ;;
+
+    mesa)
+        # /dev/dri present but vendor unknown — install Mesa for both Intel + AMD
+        NEEDED=()
+
+        dpkg -s libvulkan1 &>/dev/null          || NEEDED+=(libvulkan1)
+        dpkg -s mesa-vulkan-drivers &>/dev/null  || NEEDED+=(mesa-vulkan-drivers)
+        dpkg -s vulkan-tools &>/dev/null         || NEEDED+=(vulkan-tools)
+
+        if [ ${#NEEDED[@]} -eq 0 ]; then
             echo "Mesa Vulkan drivers already installed."
         else
-            echo "Installing Mesa Vulkan drivers..."
-            export DEBIAN_FRONTEND=noninteractive
-            if ! apt-get install -y --no-install-recommends mesa-vulkan-drivers; then
-                handle_error
-            fi
+            echo "Installing Mesa Vulkan drivers: ${NEEDED[*]}"
+            install_packages "${NEEDED[@]}"
         fi
         ;;
 
     *)
         echo "Warning: Could not detect GPU vendor."
         echo "Installing Mesa Vulkan drivers as fallback..."
-        export DEBIAN_FRONTEND=noninteractive
-        apt-get install -y --no-install-recommends mesa-vulkan-drivers 2>/dev/null || true
+        install_packages libvulkan1 mesa-vulkan-drivers vulkan-tools || true
         ;;
 esac
 
@@ -165,9 +234,29 @@ echo "Installation complete."
 # ---------------------------------------------------------------------------
 
 if ldconfig -p | grep -q libvulkan.so.1; then
-    echo "Vulkan support successfully installed."
-    exit 0
+    echo "Vulkan loader: OK"
+else
+    echo "Warning: libvulkan.so.1 not found in linker cache."
+    ldconfig
+    if ldconfig -p | grep -q libvulkan.so.1; then
+        echo "Vulkan loader: OK (after ldconfig refresh)"
+    else
+        echo "Error: Vulkan loader not available."
+        exit 1
+    fi
 fi
 
-echo "Warning: libvulkan.so.1 not found in linker cache."
-exit 1
+# Quick device check for Intel/AMD
+if [ "$GPU_VENDOR" != "nvidia" ] && [ -e /dev/dri/renderD128 ]; then
+    echo "Render device: OK (/dev/dri/renderD128)"
+fi
+
+# Run vulkaninfo if available
+if command -v vulkaninfo &>/dev/null; then
+    echo "--- vulkaninfo --summary ---"
+    vulkaninfo --summary 2>&1 || true
+    echo "----------------------------"
+fi
+
+echo "Vulkan support successfully installed for: $GPU_VENDOR"
+exit 0
