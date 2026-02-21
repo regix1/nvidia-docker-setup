@@ -1,22 +1,28 @@
 #!/bin/bash
 
-set -e
-
 EGL_ICD="/etc/vulkan/icd.d/nvidia_egl_icd.json"
 
-handle_error() {
-    echo "Error: Installation failed"
+# Function to handle errors
+function handle_error {
+    echo "An error occurred. Exiting..."
     exit 1
 }
 
-trap 'handle_error' ERR
-
+# Check if the --uninstall option is provided
 if [ "$1" == "--uninstall" ]; then
     echo "Uninstalling Vulkan support..."
-    apt-get remove -y libvulkan1 2>/dev/null || true
-    apt-get autoremove -y
-    rm -f "$EGL_ICD"
-    echo "Vulkan support successfully uninstalled."
+    if apt-get remove -y libvulkan1 && rm -f "$EGL_ICD"; then
+        apt-get autoremove -y
+        echo "Vulkan support successfully uninstalled."
+        exit 0
+    else
+        handle_error
+    fi
+fi
+
+# Check if already fully configured
+if dpkg -s libvulkan1 &>/dev/null && [ -f "$EGL_ICD" ]; then
+    echo "Vulkan support is already installed."
     exit 0
 fi
 
@@ -26,14 +32,9 @@ if dpkg -s libvulkan1 &>/dev/null; then
 else
     echo "Installing Vulkan loader..."
     export DEBIAN_FRONTEND=noninteractive
-    apt-get update
-    apt-get install -y --no-install-recommends libvulkan1
-fi
-
-# Already configured
-if [ -f "$EGL_ICD" ]; then
-    echo "Vulkan support is already installed."
-    exit 0
+    if ! apt-get update || ! apt-get install -y --no-install-recommends libvulkan1; then
+        handle_error
+    fi
 fi
 
 # Read api_version from the driver-mounted ICD
@@ -63,16 +64,13 @@ cat > "$EGL_ICD" <<EOF
 }
 EOF
 
-# Verify
-if ldconfig -p | grep -q libvulkan.so.1; then
-    echo ""
-    echo "==================== Installation Complete ===================="
-    echo "Vulkan support successfully installed"
-    echo "  - libvulkan1 (Vulkan loader)"
-    echo "  - NVIDIA EGL ICD (api_version $API_VERSION)"
-    echo ""
+echo "Installation complete."
+
+# Verify installation
+if ldconfig -p | grep -q libvulkan.so.1 && [ -f "$EGL_ICD" ]; then
+    echo "Vulkan support successfully installed."
     exit 0
-else
-    echo "Error: Failed to verify Vulkan loader installation"
-    exit 1
 fi
+
+echo "Failed to install Vulkan support."
+exit 1
