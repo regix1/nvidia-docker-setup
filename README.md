@@ -58,13 +58,15 @@ Per-GPU capabilities are tracked so the tool knows which acceleration features a
 
 ## Vulkan Support
 
-Vulkan is configured both on the host and inside Docker containers. The host-side installer fetches the LunarG Vulkan SDK tarball directly (APT-based installation was deprecated by LunarG in May 2025) and sets up validation layers, SPIR-V tools, headers, and `vulkaninfo`.
-
-For Docker containers, `mod-vulkan.sh` detects the GPU vendor and installs the correct Vulkan loader and ICD driver. NVIDIA containers get the EGL-based ICD JSON needed for FFmpeg and libplacebo. Intel containers receive ANV and Intel Media VA. AMD containers get RADV mesa. The script supports both install and uninstall modes.
+The host-side installer fetches the LunarG Vulkan SDK tarball directly (APT-based installation was deprecated by LunarG in May 2025) and sets up validation layers, SPIR-V tools, headers, and `vulkaninfo`.
 
 ## FileFlows Integration
 
-The `dovi5-to-sdr.js` template is a FileFlows script for converting Dolby Vision Profile 5 video to SDR. Profile 5 uses DV's proprietary IPTPQc2 color space, which standard HDR-to-SDR filters cannot read (producing purple/green output). This script uses libplacebo through Vulkan, the only FFmpeg filter that natively understands IPTPQc2 and applies the DV RPU reshaping metadata.
+Two templates are included for FileFlows.
+
+`mod-vulkan.sh` is a FileFlows Docker Mod that installs Vulkan support inside containers. It detects the GPU vendor and installs the correct loader and ICD driver — EGL-based ICD JSON for NVIDIA (needed for FFmpeg and libplacebo), ANV and Intel Media VA for Intel, and RADV mesa for AMD. Supports both install and uninstall modes.
+
+`dovi5-to-sdr.js` is a FileFlows script for converting Dolby Vision Profile 5 video to SDR. Profile 5 uses DV's proprietary IPTPQc2 color space, which standard HDR-to-SDR filters cannot read (producing purple/green output). This script uses libplacebo through Vulkan, the only FFmpeg filter that natively understands IPTPQc2 and applies the DV RPU reshaping metadata.
 
 The pipeline runs: Decode, Vulkan upload, libplacebo tone-map (BT.2390), download, then encode. Encoder selection is automatic — NVENC on NVIDIA, Quick Sync on Intel, libx265 as software fallback. Audio and subtitle streams are copied without re-encoding.
 
