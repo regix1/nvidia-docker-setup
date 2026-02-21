@@ -989,3 +989,59 @@ def check_nvidia_gpu():
         return bool(output)
     except Exception:
         return False
+
+
+def write_egl_icd_default() -> None:
+    """Create an EGL-based NVIDIA ICD JSON as the default Vulkan ICD.
+
+    The standard NVIDIA ICD points to libGLX_nvidia.so.0, which some
+    statically-linked FFmpeg builds cannot use for Vulkan initialisation
+    (fails with VK_ERROR_INCOMPATIBLE_DRIVER).  Using libEGL_nvidia.so.0
+    works universally.
+
+    The Vulkan api_version is read from the driver-installed ICD at
+    /usr/share/vulkan/icd.d/nvidia_icd.json so it stays in sync with
+    the installed driver.  Falls back to a safe default if unreadable.
+    """
+    import json as _json
+
+    egl_lib = "/usr/lib/x86_64-linux-gnu/libEGL_nvidia.so.0"
+    if not os.path.exists(egl_lib):
+        log_warn("Could not write default EGL ICD: libEGL_nvidia.so.0 not found")
+        return
+
+    # Read api_version from the driver-shipped ICD
+    api_version = "1.3.275"
+    for src in [
+        "/usr/share/vulkan/icd.d/nvidia_icd.json",
+        "/usr/share/vulkan/icd.d/nvidia_icd.x86_64.json",
+    ]:
+        try:
+            with open(src, "r") as fh:
+                data = _json.load(fh)
+            ver = data.get("ICD", {}).get("api_version", "")
+            if re.match(r"^\d+\.\d+\.\d+", ver):
+                api_version = ver
+                break
+        except (OSError, _json.JSONDecodeError, KeyError):
+            continue
+
+    icd_dir = "/etc/vulkan/icd.d"
+    icd_path = os.path.join(icd_dir, "nvidia_icd.json")
+    icd_content = (
+        "{\n"
+        '  "file_format_version": "1.0.1",\n'
+        '  "ICD": {\n'
+        f'    "library_path": "libEGL_nvidia.so.0",\n'
+        f'    "api_version": "{api_version}"\n'
+        "  }\n"
+        "}\n"
+    )
+
+    try:
+        os.makedirs(icd_dir, exist_ok=True)
+        with open(icd_path, "w") as fh:
+            fh.write(icd_content)
+        log_info(f"Wrote default NVIDIA EGL ICD: {icd_path} (api_version {api_version})")
+    except OSError as exc:
+        log_warn(f"Could not write {icd_path}: {exc}")

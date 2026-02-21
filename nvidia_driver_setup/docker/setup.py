@@ -2,7 +2,7 @@
 
 import os
 from ..utils.logging import log_info, log_warn, log_step
-from ..utils.system import run_command, AptManager, get_os_info
+from ..utils.system import run_command, AptManager, get_os_info, write_egl_icd_default
 
 
 DOCKER_COMPOSE_VERSION = "v2.25.0"
@@ -166,6 +166,8 @@ def _setup_nvidia_container_toolkit():
             log_warn(f"Could not generate CDI spec: {e}")
             log_info("This is normal if NVIDIA driver is not yet loaded")
 
+    write_egl_icd_default()
+
     # Restart Docker for changes to take effect
     log_info("Restarting Docker service to apply NVIDIA settings...")
     run_command("systemctl restart docker")
@@ -247,3 +249,5 @@ def _test_vulkan_in_container():
     except Exception as e:
         log_warn(f"Vulkan container test failed: {e}")
         log_info("This is expected if driver needs reboot")
+
+

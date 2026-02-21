@@ -928,7 +928,16 @@
         "kind": 2,
         "importPath": "nvidia_driver_setup.utils.system",
         "description": "nvidia_driver_setup.utils.system",
-        "peekOfCode": "def check_nvidia_gpu():\n    \"\"\"Check if NVIDIA GPU is present\"\"\"\n    try:\n        output = run_command(\"lspci | grep -i nvidia\", capture_output=True, check=False)\n        return bool(output)\n    except Exception:\n        return False",
+        "peekOfCode": "def check_nvidia_gpu():\n    \"\"\"Check if NVIDIA GPU is present\"\"\"\n    try:\n        output = run_command(\"lspci | grep -i nvidia\", capture_output=True, check=False)\n        return bool(output)\n    except Exception:\n        return False\ndef write_egl_icd_default() -> None:\n    \"\"\"Create an EGL-based NVIDIA ICD JSON as the default Vulkan ICD.\n    The standard NVIDIA ICD points to libGLX_nvidia.so.0, which some",
+        "detail": "nvidia_driver_setup.utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "write_egl_icd_default",
+        "kind": 2,
+        "importPath": "nvidia_driver_setup.utils.system",
+        "description": "nvidia_driver_setup.utils.system",
+        "peekOfCode": "def write_egl_icd_default() -> None:\n    \"\"\"Create an EGL-based NVIDIA ICD JSON as the default Vulkan ICD.\n    The standard NVIDIA ICD points to libGLX_nvidia.so.0, which some\n    statically-linked FFmpeg builds cannot use for Vulkan initialisation\n    (fails with VK_ERROR_INCOMPATIBLE_DRIVER).  Using libEGL_nvidia.so.0\n    works universally.\n    The Vulkan api_version is read from the driver-installed ICD at\n    /usr/share/vulkan/icd.d/nvidia_icd.json so it stays in sync with\n    the installed driver.  Falls back to a safe default if unreadable.\n    \"\"\"",
         "detail": "nvidia_driver_setup.utils.system",
         "documentation": {}
     },

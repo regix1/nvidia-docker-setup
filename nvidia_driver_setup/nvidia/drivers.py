@@ -6,7 +6,7 @@ import re
 import subprocess
 from ..utils.logging import log_info, log_warn, log_error, log_step
 from ..utils.prompts import prompt_yes_no, prompt_input, prompt_choice
-from ..utils.system import run_command, AptManager, cleanup_stale_nvidia_libraries, repair_nvidia_symlinks
+from ..utils.system import run_command, AptManager, cleanup_stale_nvidia_libraries, repair_nvidia_symlinks, write_egl_icd_default
 
 # Regex that matches a valid NVIDIA driver version string (e.g. 580.126.09 or 590)
 _VERSION_PATTERN = re.compile(r'^[0-9]+\.[0-9]+')
@@ -536,6 +536,11 @@ def _install_vulkan_support(apt: AptManager, major: str) -> None:
             log_info(f"  {description}: found")
         else:
             log_info(f"  {description}: not found (optional on some driver builds)")
+
+    # Write an EGL-based ICD as the default NVIDIA ICD. This avoids
+    # VK_ERROR_INCOMPATIBLE_DRIVER issues seen with some static FFmpeg builds
+    # when the ICD points to libGLX_nvidia.so.0.
+    write_egl_icd_default()
 
     # Regenerate CDI spec so containers pick up the Vulkan libraries
     _regenerate_cdi_spec()
