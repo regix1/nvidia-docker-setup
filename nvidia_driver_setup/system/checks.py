@@ -378,16 +378,39 @@ def detect_existing_installations():
         pass
 
     # Check Vulkan SDK (LunarG development SDK)
-    try:
-        sdk_output = run_command(
-            "dpkg -s vulkan-sdk 2>/dev/null | grep '^Version:'",
-            capture_output=True, check=False,
-        )
-        if sdk_output and "Version:" in sdk_output:
+    # 1. Tarball install at /opt/vulkan-sdk/ (current method)
+    _vulkan_sdk_base = "/opt/vulkan-sdk"
+    _vulkan_current = os.path.join(_vulkan_sdk_base, "current")
+    if os.path.islink(_vulkan_current):
+        target = os.path.basename(os.readlink(_vulkan_current))
+        if re.match(r"\d+\.\d+\.\d+", target):
             installations['vulkan_sdk']['installed'] = True
-            installations['vulkan_sdk']['version'] = sdk_output.split("Version:")[1].strip()
-    except:
-        pass
+            installations['vulkan_sdk']['version'] = target
+    if not installations['vulkan_sdk']['installed'] and os.path.isdir(_vulkan_sdk_base):
+        try:
+            dirs = [
+                e.name for e in os.scandir(_vulkan_sdk_base)
+                if e.is_dir() and re.match(r"\d+\.\d+\.\d+", e.name)
+            ]
+            if dirs:
+                dirs.sort(key=lambda v: [int(x) for x in v.split(".")[:3]], reverse=True)
+                installations['vulkan_sdk']['installed'] = True
+                installations['vulkan_sdk']['version'] = dirs[0]
+        except OSError:
+            pass
+    # 2. Legacy APT install
+    if not installations['vulkan_sdk']['installed']:
+        try:
+            sdk_output = run_command(
+                "dpkg -s vulkan-sdk 2>/dev/null | grep '^Version:'",
+                capture_output=True, check=False,
+            )
+            if sdk_output and "Version:" in sdk_output:
+                installations['vulkan_sdk']['installed'] = True
+                installations['vulkan_sdk']['version'] = sdk_output.split("Version:")[1].strip()
+        except Exception:
+            pass
+    # 3. VULKAN_SDK environment variable
     if not installations['vulkan_sdk']['installed']:
         sdk_path = os.environ.get("VULKAN_SDK")
         if sdk_path and os.path.isdir(sdk_path):

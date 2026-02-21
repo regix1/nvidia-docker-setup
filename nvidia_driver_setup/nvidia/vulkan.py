@@ -352,6 +352,40 @@ def _configure_environment() -> None:
         log_warn(f"Could not write {_VULKAN_PROFILE_SCRIPT}: {exc}")
         log_info(f"You can manually source: {_VULKAN_SDK_BASE}/current/setup-env.sh")
 
+    # Activate in the current process so tools work immediately
+    _activate_environment()
+
+
+def _activate_environment() -> None:
+    """Set Vulkan SDK environment variables in the current process.
+
+    This makes SDK tools (vulkaninfo, glslangValidator, etc.) available
+    immediately without requiring the user to open a new shell.
+    """
+    arch = _get_arch()
+    sdk_dir = os.path.join(_VULKAN_SDK_BASE, "current", arch)
+
+    if not os.path.isdir(sdk_dir):
+        return
+
+    os.environ["VULKAN_SDK"] = sdk_dir
+
+    sdk_bin = os.path.join(sdk_dir, "bin")
+    path = os.environ.get("PATH", "")
+    if sdk_bin not in path:
+        os.environ["PATH"] = f"{sdk_bin}:{path}"
+
+    sdk_lib = os.path.join(sdk_dir, "lib")
+    ld_path = os.environ.get("LD_LIBRARY_PATH", "")
+    if sdk_lib not in ld_path:
+        os.environ["LD_LIBRARY_PATH"] = f"{sdk_lib}:{ld_path}" if ld_path else sdk_lib
+
+    layer_path = os.path.join(sdk_dir, "share", "vulkan", "explicit_layer.d")
+    os.environ["VK_ADD_LAYER_PATH"] = layer_path
+    os.environ.pop("VK_LAYER_PATH", None)
+
+    log_info("Vulkan SDK environment activated for current session")
+
 
 # ---------------------------------------------------------------------------
 # Verification
@@ -405,7 +439,7 @@ def _show_vulkan_sdk_info(version: str) -> None:
     log_info(f"Install path:  {_VULKAN_SDK_BASE}/{version}")
     log_info("Quick test:    vulkaninfo --summary")
     log_info("Cube demo:     vkcube")
-    log_info(f"Note: Open a new shell or run 'source {_VULKAN_PROFILE_SCRIPT}' to use SDK tools")
+    log_info("SDK tools are available in this session and all future shells.")
 
 
 # ---------------------------------------------------------------------------
