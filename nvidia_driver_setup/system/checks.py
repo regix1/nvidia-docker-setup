@@ -471,6 +471,7 @@ def detect_existing_installations():
             installations['vulkan_sdk']['version'] = "Installed"
 
     # Check CUDA Toolkit (host nvcc)
+    # 1. Try nvcc on PATH
     try:
         nvcc_output = run_command("nvcc --version 2>/dev/null", capture_output=True, check=False)
         if nvcc_output and "release" in nvcc_output.lower():
@@ -478,8 +479,36 @@ def detect_existing_installations():
             if match:
                 installations['cuda_toolkit']['installed'] = True
                 installations['cuda_toolkit']['version'] = match.group(1)
-    except:
+    except Exception:
         pass
+    # 2. Fallback: nvcc may not be on PATH yet (profile.d not sourced)
+    if not installations['cuda_toolkit']['installed']:
+        try:
+            nvcc_output = run_command(
+                "/usr/local/cuda/bin/nvcc --version 2>/dev/null",
+                capture_output=True, check=False,
+            )
+            if nvcc_output and "release" in nvcc_output.lower():
+                match = re.search(r"release\s+([\d.]+)", nvcc_output)
+                if match:
+                    installations['cuda_toolkit']['installed'] = True
+                    installations['cuda_toolkit']['version'] = match.group(1)
+        except Exception:
+            pass
+    # 3. Fallback: version.json in /usr/local/cuda
+    if not installations['cuda_toolkit']['installed']:
+        import json as _json
+        version_json = "/usr/local/cuda/version.json"
+        if os.path.exists(version_json):
+            try:
+                with open(version_json, "r") as fh:
+                    data = _json.load(fh)
+                ver = data.get("cuda", {}).get("version")
+                if ver:
+                    installations['cuda_toolkit']['installed'] = True
+                    installations['cuda_toolkit']['version'] = ver
+            except Exception:
+                pass
 
     return installations
 
