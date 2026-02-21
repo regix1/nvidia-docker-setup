@@ -212,6 +212,30 @@
         "documentation": {}
     },
     {
+        "label": "full_nvidia_cleanup",
+        "importPath": "nvidia_driver_setup.utils.system",
+        "description": "nvidia_driver_setup.utils.system",
+        "isExtraImport": true,
+        "detail": "nvidia_driver_setup.utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "cleanup_nvidia_repos",
+        "importPath": "nvidia_driver_setup.utils.system",
+        "description": "nvidia_driver_setup.utils.system",
+        "isExtraImport": true,
+        "detail": "nvidia_driver_setup.utils.system",
+        "documentation": {}
+    },
+    {
+        "label": "detect_gpu_vendors",
+        "importPath": "nvidia_driver_setup.utils.system",
+        "description": "nvidia_driver_setup.utils.system",
+        "isExtraImport": true,
+        "detail": "nvidia_driver_setup.utils.system",
+        "documentation": {}
+    },
+    {
         "label": "run_preliminary_checks",
         "importPath": "nvidia_driver_setup.system.checks",
         "description": "nvidia_driver_setup.system.checks",
@@ -241,22 +265,6 @@
         "description": "nvidia_driver_setup.system.checks",
         "isExtraImport": true,
         "detail": "nvidia_driver_setup.system.checks",
-        "documentation": {}
-    },
-    {
-        "label": "full_nvidia_cleanup",
-        "importPath": "nvidia_driver_setup.utils.system",
-        "description": "nvidia_driver_setup.utils.system",
-        "isExtraImport": true,
-        "detail": "nvidia_driver_setup.utils.system",
-        "documentation": {}
-    },
-    {
-        "label": "cleanup_nvidia_repos",
-        "importPath": "nvidia_driver_setup.utils.system",
-        "description": "nvidia_driver_setup.utils.system",
-        "isExtraImport": true,
-        "detail": "nvidia_driver_setup.utils.system",
         "documentation": {}
     },
     {
@@ -622,7 +630,7 @@
         "kind": 2,
         "importPath": "nvidia_driver_setup.system.checks",
         "description": "nvidia_driver_setup.system.checks",
-        "peekOfCode": "def get_system_info():\n    \"\"\"Gather comprehensive system information\"\"\"\n    info = {\n        'os': {},\n        'kernel': None,\n        'gpu': {},\n        'capabilities': {\n            'vulkan_supported': False,\n            'nvenc_supported': False,\n            'nvdec_supported': False,",
+        "peekOfCode": "def get_system_info():\n    \"\"\"Gather comprehensive system information\"\"\"\n    info = {\n        'os': {},\n        'kernel': None,\n        'gpu': {},\n        'gpu_vendors': [],\n        'gpus': [],\n        'capabilities': {\n            'vulkan_supported': False,",
         "detail": "nvidia_driver_setup.system.checks",
         "documentation": {}
     },
@@ -631,7 +639,7 @@
         "kind": 2,
         "importPath": "nvidia_driver_setup.system.checks",
         "description": "nvidia_driver_setup.system.checks",
-        "peekOfCode": "def display_system_info(info):\n    \"\"\"Display system information in a formatted way\"\"\"\n    print(\"\\n\" + \"=\" * 60)\n    print(\"                    SYSTEM INFORMATION\")\n    print(\"=\" * 60)\n    # OS Info\n    print(f\"\\n  Operating System: {info['os']['pretty_name']}\")\n    print(f\"  Kernel:           {info['kernel']}\")\n    # GPU Info\n    if info['gpu'].get('name') or info['gpu'].get('model'):",
+        "peekOfCode": "def display_system_info(info):\n    \"\"\"Display system information in a formatted way\"\"\"\n    print(\"\\n\" + \"=\" * 60)\n    print(\"                    SYSTEM INFORMATION\")\n    print(\"=\" * 60)\n    # OS Info\n    print(f\"\\n  Operating System: {info['os']['pretty_name']}\")\n    print(f\"  Kernel:           {info['kernel']}\")\n    # GPU Info — show all detected GPUs\n    gpus = info.get('gpus', [])",
         "detail": "nvidia_driver_setup.system.checks",
         "documentation": {}
     },
@@ -640,7 +648,7 @@
         "kind": 2,
         "importPath": "nvidia_driver_setup.system.checks",
         "description": "nvidia_driver_setup.system.checks",
-        "peekOfCode": "def run_preliminary_checks():\n    \"\"\"Run all preliminary system checks.\n    Only performs fast, essential gates before showing the menu:\n    GPU present, OS version, dependencies, and internet.\n    Performance recommendations are shown once (marker file).\n    Cleanup/audit is available as a menu item.\n    \"\"\"\n    log_step(\"Running preliminary system checks...\")\n    _show_performance_note_once()\n    _check_nvidia_gpu_present()",
+        "peekOfCode": "def run_preliminary_checks():\n    \"\"\"Run all preliminary system checks.\n    Only performs fast, essential gates before showing the menu:\n    GPU present, OS version, dependencies, and internet.\n    Performance recommendations are shown once (marker file).\n    Cleanup/audit is available as a menu item.\n    \"\"\"\n    log_step(\"Running preliminary system checks...\")\n    _show_performance_note_once()\n    _check_gpu_present()",
         "detail": "nvidia_driver_setup.system.checks",
         "documentation": {}
     },
@@ -667,7 +675,7 @@
         "kind": 5,
         "importPath": "nvidia_driver_setup.system.checks",
         "description": "nvidia_driver_setup.system.checks",
-        "peekOfCode": "_ACKNOWLEDGED_MARKER = \"/var/lib/nvidia-setup/.acknowledged\"\ndef get_system_info():\n    \"\"\"Gather comprehensive system information\"\"\"\n    info = {\n        'os': {},\n        'kernel': None,\n        'gpu': {},\n        'capabilities': {\n            'vulkan_supported': False,\n            'nvenc_supported': False,",
+        "peekOfCode": "_ACKNOWLEDGED_MARKER = \"/var/lib/nvidia-setup/.acknowledged\"\ndef get_system_info():\n    \"\"\"Gather comprehensive system information\"\"\"\n    info = {\n        'os': {},\n        'kernel': None,\n        'gpu': {},\n        'gpu_vendors': [],\n        'gpus': [],\n        'capabilities': {",
         "detail": "nvidia_driver_setup.system.checks",
         "documentation": {}
     },
@@ -973,7 +981,7 @@
         "kind": 2,
         "importPath": "nvidia_driver_setup.cli",
         "description": "nvidia_driver_setup.cli",
-        "peekOfCode": "def show_banner() -> None:\n    \"\"\"Display application banner.\"\"\"\n    banner = \"\"\"\n\\u2554\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2557\n\\u2551               NVIDIA Driver Setup - Python                  \\u2551\n\\u2551          Hardware Acceleration for Media Servers            \\u2551\n\\u255a\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u255d\n\"\"\"\n    print(banner)\ndef _check_nvenc_patch_status() -> str:",
+        "peekOfCode": "def show_banner() -> None:\n    \"\"\"Display application banner.\"\"\"\n    banner = \"\"\"\n\\u2554\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2557\n\\u2551               GPU Driver Setup - Python                      \\u2551\n\\u2551          Hardware Acceleration for Media Servers            \\u2551\n\\u255a\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u2550\\u255d\n\"\"\"\n    print(banner)\n# ---------------------------------------------------------------------------",
         "detail": "nvidia_driver_setup.cli",
         "documentation": {}
     },
@@ -982,7 +990,7 @@
         "kind": 2,
         "importPath": "nvidia_driver_setup.cli",
         "description": "nvidia_driver_setup.cli",
-        "peekOfCode": "def build_menu_options(\n    installations: dict,\n) -> tuple[list[str], list[str], list[str]]:\n    \"\"\"Build the multi-select menu items from current installation state.\n    Returns:\n        (options, descriptions, statuses) - parallel lists for prompt_multi_select.\n    \"\"\"\n    options: list[str] = []\n    descriptions: list[str] = []\n    statuses: list[str] = []",
+        "peekOfCode": "def build_menu_options(\n    installations: dict,\n    gpu_vendors: list[str],\n) -> tuple[list[str], list[str], list[str], list[str]]:\n    \"\"\"Build the multi-select menu items based on detected GPU vendors.\n    NVIDIA-specific items (drivers, CUDA, patches) are only shown when an\n    NVIDIA GPU is present.  Universal items (Docker, Vulkan SDK, media\n    config, self-update) are always shown.\n    Returns:\n        (options, descriptions, statuses, action_ids) - parallel lists.",
         "detail": "nvidia_driver_setup.cli",
         "documentation": {}
     },
@@ -991,7 +999,7 @@
         "kind": 2,
         "importPath": "nvidia_driver_setup.cli",
         "description": "nvidia_driver_setup.cli",
-        "peekOfCode": "def execute_selected_items(selected: list[int], installations: dict) -> None:\n    \"\"\"Execute selected menu items in the correct order.\n    Items are sorted by EXECUTION_ORDER so that drivers install before\n    Docker, patches come after CUDA, and self-update always runs last.\n    \"\"\"\n    ordered = sorted(selected, key=lambda idx: EXECUTION_ORDER.get(idx, 99))\n    total = len(ordered)\n    for step, idx in enumerate(ordered, 1):\n        log_step(f\"[{step}/{total}] Running: item {idx + 1}\")\n        _execute_single_item(idx, installations)",
+        "peekOfCode": "def execute_selected_items(\n    selected: list[int],\n    action_ids: list[str],\n    installations: dict,\n) -> None:\n    \"\"\"Execute selected menu items in the correct order.\n    Items are sorted by EXECUTION_ORDER so that drivers install before\n    Docker, patches come after CUDA, and self-update always runs last.\n    \"\"\"\n    actions = [action_ids[i] for i in selected]",
         "detail": "nvidia_driver_setup.cli",
         "documentation": {}
     },
@@ -1000,7 +1008,7 @@
         "kind": 2,
         "importPath": "nvidia_driver_setup.cli",
         "description": "nvidia_driver_setup.cli",
-        "peekOfCode": "def show_post_installation_summary() -> None:\n    \"\"\"Show post-installation summary and next steps.\"\"\"\n    log_success(\"Installation completed successfully!\")\n    summary = \"\"\"\n======================================================================\n                       Installation Summary\n======================================================================\nNext Steps:\n1. Reboot your system for all changes to take effect\n2. Test NVIDIA Docker integration:",
+        "peekOfCode": "def show_post_installation_summary(gpu_vendors: list[str]) -> None:\n    \"\"\"Show post-installation summary and next steps.\"\"\"\n    log_success(\"Installation completed successfully!\")\n    print(\"\\n\" + \"=\" * 70)\n    print(\"                       Installation Summary\")\n    print(\"=\" * 70)\n    print(\"\\nNext Steps:\")\n    print(\"1. Reboot your system for all changes to take effect\")\n    if \"nvidia\" in gpu_vendors:\n        print(\"\\n2. Test NVIDIA Docker integration:\")",
         "detail": "nvidia_driver_setup.cli",
         "documentation": {}
     },
@@ -1010,6 +1018,87 @@
         "importPath": "nvidia_driver_setup.cli",
         "description": "nvidia_driver_setup.cli",
         "peekOfCode": "def main() -> None:\n    \"\"\"Main installation process.\"\"\"\n    try:\n        # Check if running as root\n        if os.geteuid() != 0:\n            log_error(\"This script must be run as root (sudo).\")\n            sys.exit(1)\n        show_banner()\n        # Gather and display system information first\n        log_step(\"Gathering System Information\")",
+        "detail": "nvidia_driver_setup.cli",
+        "documentation": {}
+    },
+    {
+        "label": "ACTION_NVIDIA_DRIVERS",
+        "kind": 5,
+        "importPath": "nvidia_driver_setup.cli",
+        "description": "nvidia_driver_setup.cli",
+        "peekOfCode": "ACTION_NVIDIA_DRIVERS = \"nvidia_drivers\"\nACTION_DOCKER = \"docker\"\nACTION_CUDA_VERSION = \"cuda_version\"\nACTION_VULKAN_SDK = \"vulkan_sdk\"\nACTION_CUDA_TOOLKIT = \"cuda_toolkit\"\nACTION_PATCHES = \"patches\"\nACTION_MEDIA_CONFIG = \"media_config\"\nACTION_SYSTEM_AUDIT = \"system_audit\"\nACTION_SELF_UPDATE = \"self_update\"\n# Execution priority (lower = runs first).  Self-update always runs last.",
+        "detail": "nvidia_driver_setup.cli",
+        "documentation": {}
+    },
+    {
+        "label": "ACTION_DOCKER",
+        "kind": 5,
+        "importPath": "nvidia_driver_setup.cli",
+        "description": "nvidia_driver_setup.cli",
+        "peekOfCode": "ACTION_DOCKER = \"docker\"\nACTION_CUDA_VERSION = \"cuda_version\"\nACTION_VULKAN_SDK = \"vulkan_sdk\"\nACTION_CUDA_TOOLKIT = \"cuda_toolkit\"\nACTION_PATCHES = \"patches\"\nACTION_MEDIA_CONFIG = \"media_config\"\nACTION_SYSTEM_AUDIT = \"system_audit\"\nACTION_SELF_UPDATE = \"self_update\"\n# Execution priority (lower = runs first).  Self-update always runs last.\nEXECUTION_ORDER: dict[str, int] = {",
+        "detail": "nvidia_driver_setup.cli",
+        "documentation": {}
+    },
+    {
+        "label": "ACTION_CUDA_VERSION",
+        "kind": 5,
+        "importPath": "nvidia_driver_setup.cli",
+        "description": "nvidia_driver_setup.cli",
+        "peekOfCode": "ACTION_CUDA_VERSION = \"cuda_version\"\nACTION_VULKAN_SDK = \"vulkan_sdk\"\nACTION_CUDA_TOOLKIT = \"cuda_toolkit\"\nACTION_PATCHES = \"patches\"\nACTION_MEDIA_CONFIG = \"media_config\"\nACTION_SYSTEM_AUDIT = \"system_audit\"\nACTION_SELF_UPDATE = \"self_update\"\n# Execution priority (lower = runs first).  Self-update always runs last.\nEXECUTION_ORDER: dict[str, int] = {\n    ACTION_NVIDIA_DRIVERS: 1,",
+        "detail": "nvidia_driver_setup.cli",
+        "documentation": {}
+    },
+    {
+        "label": "ACTION_VULKAN_SDK",
+        "kind": 5,
+        "importPath": "nvidia_driver_setup.cli",
+        "description": "nvidia_driver_setup.cli",
+        "peekOfCode": "ACTION_VULKAN_SDK = \"vulkan_sdk\"\nACTION_CUDA_TOOLKIT = \"cuda_toolkit\"\nACTION_PATCHES = \"patches\"\nACTION_MEDIA_CONFIG = \"media_config\"\nACTION_SYSTEM_AUDIT = \"system_audit\"\nACTION_SELF_UPDATE = \"self_update\"\n# Execution priority (lower = runs first).  Self-update always runs last.\nEXECUTION_ORDER: dict[str, int] = {\n    ACTION_NVIDIA_DRIVERS: 1,\n    ACTION_DOCKER: 2,",
+        "detail": "nvidia_driver_setup.cli",
+        "documentation": {}
+    },
+    {
+        "label": "ACTION_CUDA_TOOLKIT",
+        "kind": 5,
+        "importPath": "nvidia_driver_setup.cli",
+        "description": "nvidia_driver_setup.cli",
+        "peekOfCode": "ACTION_CUDA_TOOLKIT = \"cuda_toolkit\"\nACTION_PATCHES = \"patches\"\nACTION_MEDIA_CONFIG = \"media_config\"\nACTION_SYSTEM_AUDIT = \"system_audit\"\nACTION_SELF_UPDATE = \"self_update\"\n# Execution priority (lower = runs first).  Self-update always runs last.\nEXECUTION_ORDER: dict[str, int] = {\n    ACTION_NVIDIA_DRIVERS: 1,\n    ACTION_DOCKER: 2,\n    ACTION_CUDA_VERSION: 3,",
+        "detail": "nvidia_driver_setup.cli",
+        "documentation": {}
+    },
+    {
+        "label": "ACTION_PATCHES",
+        "kind": 5,
+        "importPath": "nvidia_driver_setup.cli",
+        "description": "nvidia_driver_setup.cli",
+        "peekOfCode": "ACTION_PATCHES = \"patches\"\nACTION_MEDIA_CONFIG = \"media_config\"\nACTION_SYSTEM_AUDIT = \"system_audit\"\nACTION_SELF_UPDATE = \"self_update\"\n# Execution priority (lower = runs first).  Self-update always runs last.\nEXECUTION_ORDER: dict[str, int] = {\n    ACTION_NVIDIA_DRIVERS: 1,\n    ACTION_DOCKER: 2,\n    ACTION_CUDA_VERSION: 3,\n    ACTION_VULKAN_SDK: 4,",
+        "detail": "nvidia_driver_setup.cli",
+        "documentation": {}
+    },
+    {
+        "label": "ACTION_MEDIA_CONFIG",
+        "kind": 5,
+        "importPath": "nvidia_driver_setup.cli",
+        "description": "nvidia_driver_setup.cli",
+        "peekOfCode": "ACTION_MEDIA_CONFIG = \"media_config\"\nACTION_SYSTEM_AUDIT = \"system_audit\"\nACTION_SELF_UPDATE = \"self_update\"\n# Execution priority (lower = runs first).  Self-update always runs last.\nEXECUTION_ORDER: dict[str, int] = {\n    ACTION_NVIDIA_DRIVERS: 1,\n    ACTION_DOCKER: 2,\n    ACTION_CUDA_VERSION: 3,\n    ACTION_VULKAN_SDK: 4,\n    ACTION_CUDA_TOOLKIT: 5,",
+        "detail": "nvidia_driver_setup.cli",
+        "documentation": {}
+    },
+    {
+        "label": "ACTION_SYSTEM_AUDIT",
+        "kind": 5,
+        "importPath": "nvidia_driver_setup.cli",
+        "description": "nvidia_driver_setup.cli",
+        "peekOfCode": "ACTION_SYSTEM_AUDIT = \"system_audit\"\nACTION_SELF_UPDATE = \"self_update\"\n# Execution priority (lower = runs first).  Self-update always runs last.\nEXECUTION_ORDER: dict[str, int] = {\n    ACTION_NVIDIA_DRIVERS: 1,\n    ACTION_DOCKER: 2,\n    ACTION_CUDA_VERSION: 3,\n    ACTION_VULKAN_SDK: 4,\n    ACTION_CUDA_TOOLKIT: 5,\n    ACTION_PATCHES: 6,",
+        "detail": "nvidia_driver_setup.cli",
+        "documentation": {}
+    },
+    {
+        "label": "ACTION_SELF_UPDATE",
+        "kind": 5,
+        "importPath": "nvidia_driver_setup.cli",
+        "description": "nvidia_driver_setup.cli",
+        "peekOfCode": "ACTION_SELF_UPDATE = \"self_update\"\n# Execution priority (lower = runs first).  Self-update always runs last.\nEXECUTION_ORDER: dict[str, int] = {\n    ACTION_NVIDIA_DRIVERS: 1,\n    ACTION_DOCKER: 2,\n    ACTION_CUDA_VERSION: 3,\n    ACTION_VULKAN_SDK: 4,\n    ACTION_CUDA_TOOLKIT: 5,\n    ACTION_PATCHES: 6,\n    ACTION_MEDIA_CONFIG: 7,",
         "detail": "nvidia_driver_setup.cli",
         "documentation": {}
     },

@@ -6,7 +6,7 @@ import os
 import re
 from ..utils.logging import log_info, log_warn, log_error, log_step
 from ..utils.prompts import prompt_yes_no
-from ..utils.system import run_command, AptManager, cleanup_nvidia_repos, cleanup_old_nvidia_drivers, full_nvidia_cleanup, check_internet, get_os_info, check_nvidia_gpu
+from ..utils.system import run_command, AptManager, cleanup_nvidia_repos, cleanup_old_nvidia_drivers, full_nvidia_cleanup, check_internet, get_os_info, check_nvidia_gpu, detect_gpu_vendors
 
 _ACKNOWLEDGED_MARKER = "/var/lib/nvidia-setup/.acknowledged"
 
@@ -17,11 +17,14 @@ def get_system_info():
         'os': {},
         'kernel': None,
         'gpu': {},
+        'gpu_vendors': [],
+        'gpus': [],
         'capabilities': {
             'vulkan_supported': False,
             'nvenc_supported': False,
             'nvdec_supported': False,
             'cuda_supported': False,
+            'qsv_supported': False,
         }
     }
 
@@ -37,49 +40,79 @@ def get_system_info():
     # Kernel version
     try:
         info['kernel'] = run_command("uname -r", capture_output=True, check=False)
-    except:
+    except Exception:
         info['kernel'] = "Unknown"
 
-    # GPU Information
+    # Detect GPU vendors
+    info['gpu_vendors'] = detect_gpu_vendors()
+
+    # GPU Information from lspci (all vendors)
     try:
-        # Get GPU model from lspci
-        lspci_output = run_command("lspci | grep -i 'vga\\|3d\\|nvidia'", capture_output=True, check=False)
+        lspci_output = run_command("lspci | grep -iE 'vga|3d|display'", capture_output=True, check=False)
         if lspci_output:
-            # Extract NVIDIA GPU model
-            for line in lspci_output.split('\n'):
-                if 'nvidia' in line.lower():
-                    # Parse out the GPU name
+            for line in lspci_output.strip().split('\n'):
+                gpu_entry: dict[str, str] = {}
+                line_lower = line.lower()
+
+                if 'nvidia' in line_lower:
                     match = re.search(r'NVIDIA Corporation (.+?)(?:\s*\(rev|$)', line, re.IGNORECASE)
-                    if match:
-                        info['gpu']['model'] = match.group(1).strip()
-                        break
-            if 'model' not in info['gpu']:
-                info['gpu']['model'] = lspci_output.split('\n')[0] if lspci_output else "Unknown"
+                    gpu_entry['vendor'] = 'nvidia'
+                    gpu_entry['model'] = match.group(1).strip() if match else line.strip()
+                elif 'intel' in line_lower:
+                    match = re.search(r'Intel Corporation (.+?)(?:\s*\(rev|$)', line, re.IGNORECASE)
+                    gpu_entry['vendor'] = 'intel'
+                    gpu_entry['model'] = match.group(1).strip() if match else line.strip()
+                elif 'amd' in line_lower or 'radeon' in line_lower:
+                    match = re.search(r'(?:AMD|ATI)[^:]*?(?:Corporation\s+)?(.+?)(?:\s*\(rev|$)', line, re.IGNORECASE)
+                    gpu_entry['vendor'] = 'amd'
+                    gpu_entry['model'] = match.group(1).strip() if match else line.strip()
+                else:
+                    gpu_entry['vendor'] = 'unknown'
+                    gpu_entry['model'] = line.strip()
 
-        # Try to get more details from nvidia-smi if driver is loaded
-        nvidia_smi_output = run_command("nvidia-smi --query-gpu=gpu_name,driver_version,compute_cap --format=csv,noheader",
-                                       capture_output=True, check=False)
-        # Validate nvidia-smi output is real CSV data, not an error message
-        _error_indicators = ["command not found", "failed", "mismatch", "nvml"]
-        if (nvidia_smi_output
-                and not any(err in nvidia_smi_output.lower() for err in _error_indicators)
-                and ',' in nvidia_smi_output):
-            parts = nvidia_smi_output.split(',')
-            if len(parts) >= 1:
-                info['gpu']['name'] = parts[0].strip()
-            if len(parts) >= 2:
-                info['gpu']['driver_version'] = parts[1].strip()
-            if len(parts) >= 3:
-                info['gpu']['compute_capability'] = parts[2].strip()
+                if gpu_entry:
+                    info['gpus'].append(gpu_entry)
 
-            # Determine capabilities based on compute capability
-            _determine_gpu_capabilities(info)
-        elif nvidia_smi_output and "mismatch" in nvidia_smi_output.lower():
-            # Driver installed but needs reboot - use lspci model if available
-            info['gpu']['driver_note'] = "Driver/library mismatch - reboot required"
+            # Set primary GPU model for backward compatibility
+            if info['gpus']:
+                info['gpu']['model'] = info['gpus'][0]['model']
 
     except Exception as e:
         info['gpu']['error'] = str(e)
+
+    # NVIDIA-specific details from nvidia-smi
+    if 'nvidia' in info['gpu_vendors']:
+        try:
+            nvidia_smi_output = run_command(
+                "nvidia-smi --query-gpu=gpu_name,driver_version,compute_cap --format=csv,noheader",
+                capture_output=True, check=False,
+            )
+            _error_indicators = ["command not found", "failed", "mismatch", "nvml"]
+            if (nvidia_smi_output
+                    and not any(err in nvidia_smi_output.lower() for err in _error_indicators)
+                    and ',' in nvidia_smi_output):
+                parts = nvidia_smi_output.split(',')
+                if len(parts) >= 1:
+                    info['gpu']['name'] = parts[0].strip()
+                if len(parts) >= 2:
+                    info['gpu']['driver_version'] = parts[1].strip()
+                if len(parts) >= 3:
+                    info['gpu']['compute_capability'] = parts[2].strip()
+
+                _determine_gpu_capabilities(info)
+            elif nvidia_smi_output and "mismatch" in nvidia_smi_output.lower():
+                info['gpu']['driver_note'] = "Driver/library mismatch - reboot required"
+        except Exception:
+            pass
+
+    # Intel-specific capabilities
+    if 'intel' in info['gpu_vendors']:
+        info['capabilities']['vulkan_supported'] = True
+        info['capabilities']['qsv_supported'] = True
+
+    # AMD-specific capabilities
+    if 'amd' in info['gpu_vendors']:
+        info['capabilities']['vulkan_supported'] = True
 
     return info
 
@@ -147,20 +180,27 @@ def display_system_info(info):
     print(f"\n  Operating System: {info['os']['pretty_name']}")
     print(f"  Kernel:           {info['kernel']}")
 
-    # GPU Info
-    if info['gpu'].get('name') or info['gpu'].get('model'):
-        gpu_name = info['gpu'].get('name') or info['gpu'].get('model', 'Unknown')
-        print(f"\n  GPU Model:        {gpu_name}")
+    # GPU Info — show all detected GPUs
+    gpus = info.get('gpus', [])
+    if gpus:
+        for i, gpu in enumerate(gpus):
+            label = "GPU" if len(gpus) == 1 else f"GPU {i + 1}"
+            vendor_tag = gpu['vendor'].upper()
+            print(f"\n  {label}:            [{vendor_tag}] {gpu['model']}")
+    elif info['gpu'].get('model'):
+        print(f"\n  GPU Model:        {info['gpu']['model']}")
 
-        if info['gpu'].get('architecture'):
-            print(f"  Architecture:     {info['gpu']['architecture']}")
-        if info['gpu'].get('compute_capability'):
-            print(f"  Compute Cap:      {info['gpu']['compute_capability']}")
-        if info['gpu'].get('driver_version'):
-            print(f"  Driver Version:   {info['gpu']['driver_version']}")
-        if info['gpu'].get('driver_note'):
-            print(f"  Driver Status:    {info['gpu']['driver_note']}")
-    else:
+    # NVIDIA-specific details (from nvidia-smi)
+    if info['gpu'].get('architecture'):
+        print(f"  Architecture:     {info['gpu']['architecture']}")
+    if info['gpu'].get('compute_capability'):
+        print(f"  Compute Cap:      {info['gpu']['compute_capability']}")
+    if info['gpu'].get('driver_version'):
+        print(f"  NVIDIA Driver:    {info['gpu']['driver_version']}")
+    if info['gpu'].get('driver_note'):
+        print(f"  Driver Status:    {info['gpu']['driver_note']}")
+
+    if not gpus and not info['gpu'].get('model'):
         if info['gpu'].get('driver_note'):
             print(f"\n  GPU:              Detected (via lspci)")
             print(f"  Driver Status:    {info['gpu']['driver_note']}")
@@ -169,16 +209,19 @@ def display_system_info(info):
 
     # Capabilities
     caps = info['capabilities']
+    vendors = info.get('gpu_vendors', [])
     print("\n  Hardware Capabilities:")
-    print(f"    CUDA:    {'[OK] Supported' if caps['cuda_supported'] else '[--] Not available'}")
-    print(f"    Vulkan:  {'[OK] Supported' if caps['vulkan_supported'] else '[!!] Not supported (requires Maxwell or newer)'}")
-    print(f"    NVENC:   {'[OK] Supported' if caps['nvenc_supported'] else '[--] Not available'}")
-    print(f"    NVDEC:   {'[OK] Supported' if caps['nvdec_supported'] else '[--] Not available'}")
+    print(f"    Vulkan:  {'[OK] Supported' if caps['vulkan_supported'] else '[--] Not available'}")
+    if 'nvidia' in vendors:
+        print(f"    CUDA:    {'[OK] Supported' if caps['cuda_supported'] else '[--] Not available'}")
+        print(f"    NVENC:   {'[OK] Supported' if caps['nvenc_supported'] else '[--] Not available'}")
+        print(f"    NVDEC:   {'[OK] Supported' if caps['nvdec_supported'] else '[--] Not available'}")
+    if 'intel' in vendors:
+        print(f"    QSV:     {'[OK] Supported' if caps['qsv_supported'] else '[--] Not available'}")
 
     # Warnings/Notes
     if not caps['vulkan_supported'] and info['gpu'].get('compute_capability'):
-        print("\n  Note: Vulkan GPU compute (NCNN) requires Maxwell architecture or newer.")
-        print("        Consider using PyTorch/CUDA backend for AI workloads instead.")
+        print("\n  Note: Vulkan GPU compute requires Maxwell architecture or newer for NVIDIA.")
 
     print("\n" + "=" * 60)
 
@@ -194,7 +237,7 @@ def run_preliminary_checks():
     log_step("Running preliminary system checks...")
 
     _show_performance_note_once()
-    _check_nvidia_gpu_present()
+    _check_gpu_present()
     _check_ubuntu_version()
     _install_dependencies()
     _check_internet_connectivity()
@@ -217,13 +260,17 @@ def _show_performance_note_once():
         pass  # Non-critical, will just show again next time
 
 
-def _check_nvidia_gpu_present():
-    """Check if NVIDIA GPU is detected"""
-    if not check_nvidia_gpu():
-        log_error("No NVIDIA GPU detected! This script requires an NVIDIA GPU.")
-        sys.exit(1)
+def _check_gpu_present():
+    """Check if any supported GPU (NVIDIA, Intel, or AMD) is detected."""
+    vendors = detect_gpu_vendors()
+    if not vendors:
+        log_error("No supported GPU detected (NVIDIA, Intel, or AMD).")
+        if not prompt_yes_no("Continue anyway?"):
+            sys.exit(1)
+        return
 
-    log_info("\u2713 NVIDIA GPU detected")
+    labels = [v.upper() for v in vendors]
+    log_info(f"\u2713 GPU detected: {', '.join(labels)}")
 
 
 def _offer_cleanup_option():
@@ -368,13 +415,19 @@ def detect_existing_installations():
             if "NVIDIA" in vulkan_output:
                 installations['vulkan']['installed'] = True
                 installations['vulkan']['version'] = "NVIDIA GPU"
+            elif "Intel" in vulkan_output:
+                installations['vulkan']['installed'] = True
+                installations['vulkan']['version'] = "Intel GPU"
+            elif "RADV" in vulkan_output or "AMD" in vulkan_output.upper():
+                installations['vulkan']['installed'] = True
+                installations['vulkan']['version'] = "AMD GPU"
             elif "llvmpipe" in vulkan_output.lower():
                 installations['vulkan']['installed'] = True
                 installations['vulkan']['version'] = "Software only"
             elif "Vulkan Instance Version" in vulkan_output:
                 installations['vulkan']['installed'] = True
                 installations['vulkan']['version'] = "Available"
-    except:
+    except Exception:
         pass
 
     # Check Vulkan SDK (LunarG development SDK)
