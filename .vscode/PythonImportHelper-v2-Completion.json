@@ -906,6 +906,15 @@
         "documentation": {}
     },
     {
+        "label": "detect_gpu_vendors",
+        "kind": 2,
+        "importPath": "nvidia_driver_setup.utils.system",
+        "description": "nvidia_driver_setup.utils.system",
+        "peekOfCode": "def detect_gpu_vendors() -> list[str]:\n    \"\"\"Detect GPU vendors present in the system via lspci.\n    Returns:\n        List of vendor identifiers found: 'nvidia', 'intel', 'amd'.\n        May contain multiple entries on systems with both dGPU and iGPU.\n    \"\"\"\n    vendors: list[str] = []\n    try:\n        result = subprocess.run(\n            \"lspci 2>/dev/null | grep -iE 'vga|3d|display'\",",
+        "detail": "nvidia_driver_setup.utils.system",
+        "documentation": {}
+    },
+    {
         "label": "check_internet",
         "kind": 2,
         "importPath": "nvidia_driver_setup.utils.system",

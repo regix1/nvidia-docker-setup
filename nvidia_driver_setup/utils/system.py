@@ -956,6 +956,32 @@ def full_nvidia_cleanup(dry_run: bool = True) -> bool:
     return found_issues
 
 
+def detect_gpu_vendors() -> list[str]:
+    """Detect GPU vendors present in the system via lspci.
+
+    Returns:
+        List of vendor identifiers found: 'nvidia', 'intel', 'amd'.
+        May contain multiple entries on systems with both dGPU and iGPU.
+    """
+    vendors: list[str] = []
+    try:
+        result = subprocess.run(
+            "lspci 2>/dev/null | grep -iE 'vga|3d|display'",
+            shell=True, capture_output=True, text=True,
+        )
+        if result.returncode == 0 and result.stdout:
+            text = result.stdout.lower()
+            if "nvidia" in text:
+                vendors.append("nvidia")
+            if "intel" in text:
+                vendors.append("intel")
+            if "amd" in text or "radeon" in text:
+                vendors.append("amd")
+    except OSError:
+        pass
+    return vendors
+
+
 def check_internet():
     """Check internet connectivity"""
     try:

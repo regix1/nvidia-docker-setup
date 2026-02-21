@@ -18,7 +18,7 @@ from typing import Optional
 
 from ..utils.logging import log_info, log_warn, log_error, log_step, log_success
 from ..utils.prompts import prompt_yes_no, prompt_choice, prompt_input
-from ..utils.system import run_command, AptManager, write_egl_icd_default
+from ..utils.system import run_command, AptManager, write_egl_icd_default, detect_gpu_vendors
 
 # LunarG API endpoints
 _LUNARG_VERSIONS_URL = "https://vulkan.lunarg.com/sdk/versions/linux.json"
@@ -443,6 +443,51 @@ def _show_vulkan_sdk_info(version: str) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Vendor-specific Vulkan ICD configuration
+# ---------------------------------------------------------------------------
+
+def _install_mesa_vulkan_drivers() -> None:
+    """Install Mesa Vulkan drivers for Intel iGPU and AMD GPU support.
+
+    The ``mesa-vulkan-drivers`` package provides:
+      - Intel ANV driver (for Intel HD / UHD / Arc GPUs)
+      - AMD RADV driver (for AMD / Radeon GPUs)
+
+    The package automatically registers the correct Vulkan ICD JSON
+    under ``/usr/share/vulkan/icd.d/``, so no manual ICD configuration
+    is needed (unlike NVIDIA).
+    """
+    log_info("Installing Mesa Vulkan drivers (Intel ANV / AMD RADV)...")
+    apt = AptManager()
+    try:
+        apt.install("mesa-vulkan-drivers", "libvulkan1")
+        log_success("Mesa Vulkan drivers installed")
+    except Exception as exc:
+        log_warn(f"Could not install Mesa Vulkan drivers: {exc}")
+        log_info("You can install manually: apt install mesa-vulkan-drivers")
+
+
+def _configure_vendor_vulkan(vendors: list[str]) -> None:
+    """Run vendor-specific Vulkan ICD configuration.
+
+    Args:
+        vendors: List of detected GPU vendor strings ('nvidia', 'intel', 'amd').
+    """
+    if not vendors:
+        log_warn("No GPU vendors detected — skipping vendor-specific Vulkan config")
+        return
+
+    if "nvidia" in vendors:
+        log_info("Configuring Vulkan ICD for NVIDIA GPU...")
+        write_egl_icd_default()
+
+    if "intel" in vendors or "amd" in vendors:
+        label = " + ".join(v.upper() for v in vendors if v in ("intel", "amd"))
+        log_info(f"Configuring Vulkan drivers for {label} GPU...")
+        _install_mesa_vulkan_drivers()
+
+
+# ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
 
@@ -559,8 +604,9 @@ def install_vulkan_sdk() -> None:
     # Configure environment
     _configure_environment()
 
-    # Ensure the default NVIDIA Vulkan ICD uses EGL for container compatibility
-    write_egl_icd_default()
+    # Configure vendor-specific Vulkan ICD / drivers
+    vendors = detect_gpu_vendors()
+    _configure_vendor_vulkan(vendors)
 
     # Verify and display info
     _verify_vulkan_sdk()
