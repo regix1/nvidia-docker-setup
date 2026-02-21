@@ -1,17 +1,12 @@
-# NVIDIA Driver Setup
+# GPU Driver Setup
 
-A CLI tool for installing and configuring NVIDIA drivers with Docker support on Ubuntu/Debian, built for media server hardware acceleration.
+A CLI tool for installing and configuring GPU drivers, Vulkan, and Docker on Ubuntu/Debian systems. Built for media server hardware acceleration across NVIDIA, Intel, and AMD GPUs.
 
-## Features
+## Overview
 
-- **Multi-select menu** - pick multiple tasks and run them in one go
-- **NVIDIA driver management** - automated install with version selection and cleanup
-- **Docker + NVIDIA runtime** - Docker CE and NVIDIA Container Toolkit setup
-- **Live CUDA version discovery** - fetches available versions from Docker Hub in real-time
-- **NVENC/NvFBC binary patcher** - removes encoding session limits using anchor-based pattern matching
-- **Media server config** - pre-configured Docker Compose for Plex with GPU transcoding
-- **Self-update** - pulls latest changes from GitHub and reinstalls
-- **Smart detection** - detects existing drivers, Docker, and NVIDIA runtime before prompting
+The tool presents a multi-select menu where you pick one or more tasks and execute them together. It detects your installed GPUs via `lspci`, identifies the vendor (NVIDIA, Intel, or AMD), and tracks per-GPU capabilities including Vulkan, NVENC, NVDEC, CUDA, and Quick Sync Video. Existing drivers, Docker, and runtime state are detected automatically before prompting, so the menu always reflects what is already configured.
+
+Driver management covers automated NVIDIA driver installation with version selection and cleanup. Docker CE and the NVIDIA Container Toolkit are configured together. CUDA container versions are discovered live from Docker Hub with minimum driver requirements shown inline. The NVENC/NvFBC binary patcher removes encoding session limits on consumer GeForce GPUs. A media server configuration option generates Docker Compose setups for Plex with GPU transcoding. The tool can also update itself from GitHub.
 
 ## Install
 
@@ -60,9 +55,25 @@ Select items to run (toggle numbers, Enter to execute):
 
 Selected items execute in dependency order: drivers first, then Docker, CUDA, patches, media config, and self-update last.
 
+## Multi-GPU Vendor Detection
+
+The tool scans for all GPUs present in the system using `lspci` and identifies each by vendor and model. NVIDIA, Intel, and AMD GPUs are all recognized. Per-GPU capabilities are tracked so the tool knows which acceleration features are available: Vulkan, NVENC/NVDEC, CUDA, and Intel Quick Sync. This information feeds into driver installation decisions, Vulkan configuration, and encoder selection throughout the tool and its templates.
+
+## Vulkan Support
+
+Vulkan installation and configuration is handled both on the host and inside Docker containers. The host-side installer fetches the LunarG Vulkan SDK tarball directly (APT-based installation was deprecated by LunarG in May 2025) and configures validation layers, SPIR-V tools, headers, and `vulkaninfo`.
+
+For Docker containers, the `mod-vulkan.sh` template detects the GPU vendor and installs the correct Vulkan loader and ICD driver. NVIDIA containers get the EGL-based ICD JSON required for FFmpeg and libplacebo compatibility. Intel containers receive the ANV Vulkan driver and Intel Media VA driver. AMD containers get the RADV mesa driver. The script supports both install and uninstall modes.
+
+## FileFlows Integration
+
+The `dovi5-to-sdr.js` template is a FileFlows processing script for converting Dolby Vision Profile 5 video to SDR. Profile 5 uses DV's proprietary IPTPQc2 color space in the base layer, which standard HDR-to-SDR tone-mapping filters cannot read (producing purple/green output). This script uses libplacebo through Vulkan, the only FFmpeg filter that natively understands IPTPQc2 and applies the DV RPU reshaping metadata for correct colors.
+
+The pipeline is: Decode, Vulkan upload, libplacebo tone-map (BT.2390 curve), download, then hardware or software encode. Encoder selection is automatic with priority order: NVENC on NVIDIA GPUs, Quick Sync on Intel GPUs, then libx265 software fallback. Audio and subtitle streams are copied without re-encoding. Connect the script to Output 3 of the "Detect DV Profile" flow node in FileFlows.
+
 ## CUDA Version Discovery
 
-CUDA versions are fetched live from the Docker Hub `nvidia/cuda` image tags. The tool shows minimum driver requirements from NVIDIA's release notes alongside each version:
+CUDA versions are fetched live from the Docker Hub `nvidia/cuda` image tags. The tool shows minimum driver requirements alongside each version:
 
 ```
 Available CUDA versions for containers:
@@ -81,13 +92,13 @@ Falls back to an offline list if Docker Hub is unreachable.
 
 Consumer GeForce GPUs limit concurrent NVENC encoding sessions. This tool removes that limit by patching `libnvidia-encode.so` directly.
 
-Unlike sed-based approaches (which can corrupt the binary by matching multiple locations), this patcher uses anchor-based pattern matching to locate the exact session-check instruction sequence, then patches only that location. Supports all modern driver versions with automatic pattern detection.
+Unlike sed-based approaches that can corrupt the binary by matching multiple locations, this patcher uses anchor-based pattern matching to locate the exact session-check instruction sequence, then patches only that location. Supports all modern driver versions with automatic pattern detection.
 
 ## Self-Update
 
-The tool can update itself (menu option 6). It pulls the latest changes from `https://github.com/regix1/nvidia-driver-setup.git` and reinstalls the package.
+The tool can update itself via menu option 6. It pulls the latest changes from the GitHub repository and reinstalls the package.
 
-Self-update always runs last in the execution order. The current session continues with the old code; changes take effect on next launch.
+Self-update always runs last in the execution order. The current session continues with the old code and changes take effect on next launch.
 
 ## Project Structure
 
@@ -102,41 +113,42 @@ nvidia-driver-setup/
 │   ├── nvidia/
 │   │   ├── drivers.py               # Driver install + cleanup
 │   │   ├── cuda.py                  # CUDA version selection (Docker Hub API)
-│   │   └── patches.py               # NVENC/NvFBC binary patcher
+│   │   ├── cuda_toolkit.py          # CUDA toolkit management
+│   │   ├── patches.py               # NVENC/NvFBC binary patcher
+│   │   └── vulkan.py                # Vulkan SDK install (LunarG)
 │   ├── docker/
 │   │   ├── setup.py                 # Docker + NVIDIA runtime install
 │   │   └── config.py                # Media server Docker config
 │   ├── system/
-│   │   └── checks.py                # System checks, GPU detection
+│   │   └── checks.py                # GPU detection, vendor ID, capabilities
 │   └── utils/
 │       ├── logging.py               # Color log helpers
 │       ├── prompts.py               # yes/no, choice, multi-select prompts
 │       └── system.py                # run_command(), AptManager
 ├── templates/
-│   ├── docker-daemon.json
-│   ├── docker-daemon-cgroupfs.json
-│   └── plex-nvidia.yml
+│   ├── docker-daemon.json           # Docker daemon config
+│   ├── docker-daemon-cgroupfs.json  # Docker daemon config (cgroupfs)
+│   ├── dovi5-to-sdr.js              # FileFlows DV5-to-SDR script
+│   ├── mod-vulkan.sh                # Multi-vendor Vulkan installer for Docker
+│   └── plex-nvidia.yml              # Plex Docker Compose template
 └── configs/
-    └── cuda_versions.json           # Offline CUDA version fallback
+    ├── cuda_versions.json           # Offline CUDA version fallback
+    └── vulkan_versions.json         # Vulkan version data
 ```
 
 ## Requirements
 
-- Ubuntu 22.04+ (Debian-based)
-- NVIDIA GPU
-- Root access (`sudo`)
-- Python 3.10+
-- Internet connection (for driver/Docker downloads; CUDA list has offline fallback)
+The tool requires Ubuntu 22.04 or later (Debian-based). At least one supported GPU (NVIDIA, Intel, or AMD) should be present. Root access via `sudo` is needed for driver and Docker operations. Python 3.10 or newer must be installed. An internet connection is required for driver and Docker downloads, though the CUDA version list has an offline fallback.
 
 ## Troubleshooting
 
-**CUDA_ERROR_NO_DEVICE in containers** - select the cgroupfs driver option when prompted, then reboot.
+**CUDA_ERROR_NO_DEVICE in containers** -- select the cgroupfs driver option when prompted, then reboot.
 
-**Driver version mismatch** - use the cleanup option when prompted, then reboot.
+**Driver version mismatch** -- use the cleanup option when prompted, then reboot.
 
-**Docker permission denied** - `sudo usermod -aG docker $USER`, then log out and back in.
+**Docker permission denied** -- run `sudo usermod -aG docker $USER`, then log out and back in.
 
-**NVENC "incompatible client key"** - re-run and use menu option 4 (anchor-based patcher). This usually means a sed-based tool previously patched the wrong location.
+**NVENC "incompatible client key"** -- re-run and use menu option 4 (anchor-based patcher). This usually means a sed-based tool previously patched the wrong location.
 
 **Test GPU integration:**
 
@@ -162,5 +174,4 @@ Provided as-is for educational and personal use.
 
 ## Acknowledgments
 
-- [keylase/nvidia-patch](https://github.com/keylase/nvidia-patch) for upstream NVENC patch research
-- NVIDIA for GPU drivers and Container Toolkit
+The NVENC patch research is based on work from [keylase/nvidia-patch](https://github.com/keylase/nvidia-patch). Vulkan SDK distribution is provided by [LunarG](https://vulkan.lunarg.com/).
