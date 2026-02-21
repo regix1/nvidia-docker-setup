@@ -456,14 +456,8 @@ def _install_specific_driver(version: str) -> None:
         # Clean up stale libraries and fix symlinks from previous driver versions
         _post_install_library_cleanup()
 
-        # Also install libnvidia-gl for Vulkan support
-        gl_package = f"libnvidia-gl-{major}"
-        log_info(f"Installing Vulkan/OpenGL support: {gl_package}")
-        try:
-            apt.install(gl_package)
-            log_info(f"Successfully installed {gl_package}")
-        except Exception:
-            log_warn(f"Could not install {gl_package} - Vulkan may not work properly")
+        # Install Vulkan/OpenGL support packages
+        _install_vulkan_support(apt, major)
 
     except subprocess.CalledProcessError:
         log_error(f"Failed to install {package_name}")
@@ -484,6 +478,51 @@ def _install_specific_driver(version: str) -> None:
                 continue
 
         raise Exception(f"Could not install driver version {version}")
+
+
+def _install_vulkan_support(apt: AptManager, major: str) -> None:
+    """Install Vulkan/OpenGL support packages for the NVIDIA driver.
+
+    Installs libnvidia-gl (OpenGL/GLX), libnvidia-glvkspirv (Vulkan
+    SPIR-V compiler), and libnvidia-gpucomp (GPU compiler).  Without
+    glvkspirv and gpucomp, Vulkan initialization fails with
+    VK_ERROR_INITIALIZATION_FAILED — both on the host and in containers.
+
+    Driver 590+ uses unversioned package names; older drivers use
+    versioned names (e.g. libnvidia-gl-580).  We try versioned first
+    and fall back to unversioned.
+    """
+    packages = [
+        ("libnvidia-gl", "Vulkan/OpenGL support"),
+        ("libnvidia-glvkspirv", "Vulkan SPIR-V compiler"),
+        ("libnvidia-gpucomp", "Vulkan GPU compiler"),
+    ]
+
+    for base_name, description in packages:
+        versioned = f"{base_name}-{major}"
+        installed = False
+
+        # Try versioned name first (e.g. libnvidia-gl-580)
+        try:
+            apt.install(versioned)
+            log_info(f"Installed {versioned} ({description})")
+            installed = True
+        except Exception:
+            pass
+
+        # Fall back to unversioned name (590+ new packaging)
+        if not installed:
+            try:
+                apt.install(base_name)
+                log_info(f"Installed {base_name} ({description})")
+                installed = True
+            except Exception:
+                pass
+
+        if not installed:
+            log_warn(f"Could not install {base_name} ({description})")
+            if "glvkspirv" in base_name or "gpucomp" in base_name:
+                log_warn("  Vulkan may not work without this package")
 
 
 def _post_install_library_cleanup() -> None:
