@@ -47,7 +47,7 @@ function Script() {
         "-init_hw_device", "vulkan=vk",
         "-filter_hw_device", "vk",
         "-i", working,
-        "-map", "0",
+        "-map", "0:v:0", "-map", "0:a", "-map", "0:s?",
         "-vf", vf
     ];
 
@@ -67,6 +67,12 @@ function Script() {
     }
 
     args = args.concat(["-pix_fmt", "yuv420p"]);
+
+    // Strip Dolby Vision RPU NAL units (type 62) from the HEVC bitstream.
+    // Without this, Plex may detect residual DV metadata and attempt its own
+    // (broken) DV tone mapping, producing purple/green output even though
+    // the video has already been correctly converted to SDR.
+    args = args.concat(["-bsf:v", "filter_units=remove_types=62"]);
 
     args = args.concat([
         "-c:a", "copy",
@@ -103,6 +109,38 @@ function Script() {
         return -1;
     }
 
+    // Remux to strip any container-level DOVI configuration record.
+    // Even after bitstream filtering, MKV may carry DV side data that causes
+    // Plex to attempt DV processing on the already-converted SDR file.
+    let cleanOutput = System.IO.Path.Combine(dir, nameNoExt + "_sdr_clean.mkv");
+    let remuxArgs = [
+        "-y", "-i", output,
+        "-map", "0",
+        "-c", "copy",
+        "-map_metadata", "-1",
+        "-bsf:v", "filter_units=remove_types=62",
+        cleanOutput
+    ];
+    Logger.ILog("Remuxing to strip DV metadata...");
+    let remux = Flow.Execute({
+        command: ffmpeg,
+        argumentList: remuxArgs
+    });
+    if (remux.exitCode === 0 && System.IO.File.Exists(cleanOutput)) {
+        let cleanInfo = new System.IO.FileInfo(cleanOutput);
+        if (cleanInfo.Length > 1000) {
+            try { System.IO.File.Delete(output); } catch(e) {}
+            System.IO.File.Move(cleanOutput, output);
+            Logger.ILog("DV metadata stripped successfully");
+        } else {
+            Logger.WLog("Remux output too small, keeping original");
+            try { System.IO.File.Delete(cleanOutput); } catch(e) {}
+        }
+    } else {
+        Logger.WLog("Remux failed, keeping original (Plex may still show wrong colors)");
+        try { System.IO.File.Delete(cleanOutput); } catch(e) {}
+    }
+
     // Verify color metadata in output
     let ffprobe = ToolPath("ffprobe");
     if (ffprobe) {
@@ -128,10 +166,16 @@ function Script() {
             } else {
                 Logger.WLog("Pixel format verification: expected yuv420p but got different format");
             }
+            if (probeOut.indexOf("DOVI") >= 0 || probeOut.indexOf("dovi") >= 0 || probeOut.indexOf("dv_profile") >= 0) {
+                Logger.WLog("WARNING: DOVI metadata still present in output — Plex may misinterpret as DV");
+            } else {
+                Logger.ILog("DV metadata verification: No DOVI configuration record found (clean SDR)");
+            }
         }
     }
 
     Logger.ILog("Conversion complete: " + output);
+    info = new System.IO.FileInfo(output);
     Logger.ILog("Output size: " + (info.Length / 1048576).toFixed(1) + " MB");
 
     Flow.SetWorkingFile(output);
