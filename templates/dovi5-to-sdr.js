@@ -52,13 +52,21 @@ function Script() {
     ];
 
     if (encoder === "nvenc") {
-        args = args.concat(["-c:v", "hevc_nvenc", "-preset", "p4", "-cq", "20"]);
+        args = args.concat(["-c:v", "hevc_nvenc", "-profile:v", "main", "-preset", "p4", "-cq", "20",
+                            "-color_primaries", "bt709", "-color_trc", "bt709",
+                            "-colorspace", "bt709", "-color_range", "tv"]);
     } else if (encoder === "qsv") {
-        args = args.concat(["-c:v", "hevc_qsv", "-preset", "medium", "-global_quality", "20"]);
+        args = args.concat(["-c:v", "hevc_qsv", "-profile:v", "main", "-preset", "medium", "-global_quality", "20",
+                            "-color_primaries", "bt709", "-color_trc", "bt709",
+                            "-colorspace", "bt709", "-color_range", "tv"]);
     } else {
         args = args.concat(["-c:v", "libx265", "-preset", "medium", "-crf", "20",
-                            "-x265-params", "log-level=error"]);
+                            "-x265-params", "log-level=error",
+                            "-color_primaries", "bt709", "-color_trc", "bt709",
+                            "-colorspace", "bt709", "-color_range", "tv"]);
     }
+
+    args = args.concat(["-pix_fmt", "yuv420p"]);
 
     args = args.concat([
         "-c:a", "copy",
@@ -93,6 +101,34 @@ function Script() {
         Logger.ELog("Output file too small (" + info.Length + " bytes), likely failed");
         try { System.IO.File.Delete(output); } catch(e) {}
         return -1;
+    }
+
+    // Verify color metadata in output
+    let ffprobe = ToolPath("ffprobe");
+    if (ffprobe) {
+        let probe = Flow.Execute({
+            command: ffprobe,
+            argumentList: [
+                "-v", "quiet",
+                "-print_format", "json",
+                "-show_streams",
+                "-select_streams", "v:0",
+                output
+            ]
+        });
+        if (probe.exitCode === 0) {
+            let probeOut = probe.standardOutput || probe.output || "";
+            if (probeOut.indexOf("bt709") >= 0) {
+                Logger.ILog("Color metadata verification: BT.709 tags confirmed");
+            } else {
+                Logger.WLog("Color metadata verification: BT.709 tags not detected in output — Plex may show wrong colors");
+            }
+            if (probeOut.indexOf("yuv420p") >= 0 && probeOut.indexOf("yuv420p10") < 0) {
+                Logger.ILog("Pixel format verification: yuv420p (8-bit) confirmed");
+            } else {
+                Logger.WLog("Pixel format verification: expected yuv420p but got different format");
+            }
+        }
     }
 
     Logger.ILog("Conversion complete: " + output);
